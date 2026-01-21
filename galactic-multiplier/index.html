@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galactic Multiplier</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <!-- Standard CSS for Fonts and Animations -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Press+Start+2P&display=swap');
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Animated Star Background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: stars 4s linear infinite;
+        }
+
+        @keyframes stars {
+            from { transform: translateY(0); }
+            to { transform: translateY(200px); }
+        }
+
+        /* Neon Glow Effects */
+        .neon-text {
+            text-shadow: 0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 30px #d8b4fe;
+        }
+        
+        /* Animations */
+        .pulse-mic { animation: pulse-mic 1.5s infinite; }
+        @keyframes pulse-mic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .bounce { animation: bounce 0.5s cubic-bezier(0.8, 0, 1, 1); }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        .pop-in {
+            animation: popIn 0.3s ease-out forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Keypad Styling */
+        .key-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.1s;
+        }
+        .key-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+        
+        /* Badge Styles */
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .badge-slot {
+            @apply flex flex-col items-center justify-center p-2 rounded-xl bg-slate-800/50 border border-slate-700 h-24 opacity-40 grayscale transition-all duration-500;
+        }
+        .badge-slot.earned {
+            @apply opacity-100 grayscale-0 border-yellow-500/50 bg-slate-800 shadow-[0_0_15px_rgba(234,179,8,0.2)];
+        }
+    </style>
+
+    <!-- Tailwind Config for Custom Classes (@apply works here) -->
+    <style type="text/tailwindcss">
+        .mode-btn {
+            @apply border-2 border-slate-600 rounded-xl p-3 text-sm font-bold text-slate-300 bg-slate-800/50 transition-all;
+        }
+        .mode-btn.active {
+            @apply border-blue-400 bg-blue-500/20 text-white shadow-lg shadow-blue-500/20 ring-2 ring-blue-500/50;
+        }
+        
+        .op-btn {
+            @apply flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 bg-slate-800/50 transition-all border border-transparent;
+        }
+        .op-btn.active {
+            @apply bg-purple-600 text-white shadow-lg border-purple-400;
+        }
+
+        .num-toggle {
+            @apply w-10 h-10 rounded-full border border-slate-600 flex items-center justify-center font-bold bg-slate-800 transition-all text-slate-400;
+        }
+        .num-toggle.selected {
+            @apply bg-green-500 border-green-400 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)] scale-110 border-2;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-between p-4 selection:bg-purple-500 selection:text-white">
+
+    <!-- Background -->
+    <div class="stars"></div>
+    <div class="stars" style="animation-delay: -2s; background-size: 300px 300px; opacity: 0.5;"></div>
+
+    <!-- Header / Stats -->
+    <div class="w-full max-w-md flex justify-between items-center z-10 pt-2 relative">
+        <div class="flex flex-col">
+            <span class="text-xs text-blue-300 uppercase tracking-widest">Score</span>
+            <span id="scoreDisplay" class="text-2xl font-bold text-blue-400">0</span>
+        </div>
+        
+        <!-- Timer/Counter Display -->
+        <div id="missionStatus" class="absolute left-1/2 -translate-x-1/2 top-2 bg-slate-800/80 px-4 py-1 rounded-full border border-slate-600 hidden">
+            <span id="statusIcon" class="mr-2 text-yellow-400"><i class="fa-solid fa-clock"></i></span>
+            <span id="statusValue" class="font-mono text-xl text-white">60</span>
+        </div>
+
+        <div class="flex flex-col items-end">
+            <span class="text-xs text-yellow-300 uppercase tracking-widest">Streak</span>
+            <div class="flex gap-1" id="streakContainer">
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Area -->
+    <div id="gameArea" class="flex-1 flex flex-col justify-center items-center w-full max-w-md relative z-10 hidden">
+        
+        <!-- Robot Mascot Area -->
+        <div class="mb-6 relative">
+            <div id="mascot" class="text-6xl transition-transform duration-300">🤖</div>
+            <div id="speechBubble" class="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-white text-slate-900 px-4 py-2 rounded-2xl whitespace-nowrap opacity-0 transition-opacity duration-300 font-bold border-4 border-blue-400 z-20">
+                Ready?
+            </div>
+        </div>
+
+        <!-- Question -->
+        <div class="text-center mb-8">
+            <div class="text-xl text-purple-300 mb-2">What is...</div>
+            <div class="flex items-center justify-center gap-4 text-6xl font-bold neon-text bg-slate-900/50 p-6 rounded-3xl border border-purple-500/30 backdrop-blur-sm">
+                <span id="num1" class="text-purple-400">?</span>
+                <span id="operatorSign" class="text-white text-4xl">×</span>
+                <span id="num2" class="text-purple-400">?</span>
+            </div>
+        </div>
+
+        <!-- Answer Display (what user said/typed) -->
+        <div class="h-16 flex items-center justify-center mb-4 w-full">
+            <div id="userAnswerDisplay" class="text-4xl font-bold text-yellow-400 tracking-widest min-h-[3rem]"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="w-full flex flex-col items-center gap-4">
+            
+            <!-- Mic Button -->
+            <button id="micBtn" class="w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center text-3xl shadow-lg border-4 border-red-400 transition-all hover:scale-105 active:scale-95">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            <p id="micStatus" class="text-sm text-gray-400 animate-pulse">Tap to speak answer</p>
+
+            <!-- Keypad Toggle -->
+            <button id="toggleKeypadBtn" class="text-sm text-blue-300 underline decoration-dotted mt-2">
+                Use Keypad Instead
+            </button>
+            <button onclick="quitGame()" class="text-xs text-red-400/60 mt-4 hover:text-red-400">Abort Mission</button>
+        </div>
+    </div>
+
+    <!-- Keypad (Hidden by default) -->
+    <div id="keypad" class="hidden fixed bottom-0 left-0 w-full bg-slate-900/95 border-t border-slate-700 p-4 rounded-t-3xl z-50 backdrop-blur-xl transition-transform transform translate-y-full">
+        <div class="grid grid-cols-3 gap-3 max-w-md mx-auto">
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(1)">1</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(2)">2</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(3)">3</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(4)">4</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(5)">5</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(6)">6</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(7)">7</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(8)">8</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(9)">9</button>
+            <button class="key-btn h-14 rounded-xl text-xl font-bold bg-red-500/20 text-red-300 border-red-500/30" onclick="clearKey()"><i class="fa-solid fa-delete-left"></i></button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(0)">0</button>
+            <button class="key-btn h-14 rounded-xl text-xl font-bold bg-green-500/20 text-green-300 border-green-500/30" onclick="checkAnswer(true)">OK</button>
+        </div>
+        <button onclick="toggleKeypad()" class="w-full text-center mt-4 text-gray-500 text-sm">Close Keypad</button>
+    </div>
+
+    <!-- Start / Configuration Screen -->
+    <div id="startScreen" class="absolute inset-0 bg-slate-900 z-50 flex flex-col items-center p-6 overflow-y-auto">
+        <div class="mt-2 mb-4 text-center">
+            <h1 class="text-3xl font-bold mb-1 neon-text font-['Press_Start_2P'] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-tight">GALACTIC<br>MULTIPLIER</h1>
+            <p class="text-xs text-gray-400">Mission Control</p>
+        </div>
+
+        <!-- Badges Display (Expanded) -->
+        <div class="w-full max-w-sm mb-6">
+            <p class="text-xs text-center text-slate-400 mb-2 uppercase tracking-widest">Hall of Fame</p>
+            <div class="badge-grid">
+                <!-- Row 1 -->
+                <div id="badge-pilot" class="badge-slot">
+                    <i class="fa-solid fa-rocket text-xl text-blue-400 mb-1"></i>
+                    <span class="text-[0.6rem] text-center leading-tight">Rocket<br>Pilot</span>
+                    <span class="text-[0.5rem] text-slate-500 mt-1">200</span>
+                </div>
+                <div id="badge-commander" class="badge-slot">
+                    <i class="fa-solid fa-user-astronaut text-xl text-purple-400 mb-1"></i>
+                    <span class="text-[0.6rem] text-center leading-tight">Mission<br>Cmdr</span>
+                    <span class="text-[0.5rem] text-slate-500 mt-1">500</span>
+                </div>
+                <div id="badge-legend" class="badge-slot">
+                    <i class="fa-solid fa-crown text-xl text-yellow-400 mb-1"></i>
+                    <span class="text-[0.6rem] text-center leading-tight">Galactic<br>Legend</span>
+                    <span class="text-[0.5rem] text-slate-500 mt-1">1000</span>
+                </div>
+                <!-- Row 2 (New) -->
+                <div id="badge-navigator" class="badge-slot">
+                    <i class="fa-solid fa-compass text-xl text-cyan-400 mb-1"></i>
+                    <span class="text-[0.6rem] text-center leading-tight">Nebula<br>Nav</span>
+                    <span class="text-[0.5rem] text-slate-500 mt-1">1500</span>
+                </div>
+                <div id="badge-supernova" class="badge-slot">
+                    <i class="fa-solid fa-sun text-xl text-orange-400 mb-1"></i>
+                    <span class="text-[0.6rem] text-center leading-tight">Supernova<br>Spec</span>
+                    <span class="text-[0.5rem] text-slate-500 mt-1">2000</span>
+                </div>
+                <div id="badge-master" class="badge-slot">
+                    <i class="fa-solid fa-infinity text-xl text-pink-400 mb-1"></i>
+                    <span class="text-[0.6rem] text-center leading-tight">Universal<br>Master</span>
+                    <span class="text-[0.5rem] text-slate-500 mt-1">3000</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex mb-4">
+            <button id="btnModePractice" onclick="setMode('practice')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg">Practice</button>
+            <button id="btnModeTest" onclick="setMode('test')" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all">Test Mission</button>
+        </div>
+
+        <!-- Operation Toggle (New) -->
+        <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex gap-2 mb-6">
+            <button id="btnOpMultiply" onclick="setOperation('multiply')" class="op-btn active">
+                <i class="fa-solid fa-xmark mr-1"></i> Multiply
+            </button>
+            <button id="btnOpDivide" onclick="setOperation('divide')" class="op-btn">
+                <i class="fa-solid fa-divide mr-1"></i> Divide
+            </button>
+        </div>
+
+        <!-- Shared Number Configuration -->
+        <div class="w-full max-w-sm mb-6">
+            <p class="text-sm text-center text-blue-200 mb-3">Select Target Numbers:</p>
+            <div class="grid grid-cols-4 gap-3 justify-items-center" id="numGrid">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- Test Configuration (Only visible in test mode) -->
+        <div id="configTest" class="w-full max-w-sm hidden mb-6">
+            <p class="text-sm text-center text-blue-200 mb-3">Select Mission Type:</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="setTestType('time')" id="btnTestTime" class="mode-btn active flex flex-col items-center justify-center py-4">
+                    <i class="fa-solid fa-stopwatch text-xl mb-1"></i>
+                    <span>1 Min Blitz</span>
+                </button>
+                <button onclick="setTestType('count')" id="btnTestCount" class="mode-btn flex flex-col items-center justify-center py-4">
+                    <i class="fa-solid fa-list-ol text-xl mb-1"></i>
+                    <span>20 Qs</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-auto mb-4 w-full max-w-sm">
+            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-xl font-bold shadow-xl shadow-purple-900/50 hover:scale-105 transition-transform flex items-center justify-center gap-3">
+                <i class="fa-solid fa-rocket"></i> <span id="startBtnText">Start Practice</span>
+            </button>
+            <p class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="hidden absolute inset-0 bg-slate-900/95 z-[60] flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="mb-4">
+            <i class="fa-solid fa-medal text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] bounce"></i>
+        </div>
+        <h2 class="text-3xl font-bold text-white mb-1">Mission Complete!</h2>
+        <p id="rankTitle" class="text-xl text-purple-300 font-bold mb-2">Rank: Space Cadet</p>
+        <div id="newBadgeAlert" class="hidden bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 rounded-lg px-3 py-1 text-sm font-bold mb-4 animate-pulse">
+            New Badge Earned!
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="text-gray-400 text-xs uppercase">Final Score</div>
+                <div id="finalScore" class="text-2xl font-bold text-blue-400">0</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="text-gray-400 text-xs uppercase">Accuracy</div>
+                <div id="finalAccuracy" class="text-2xl font-bold text-green-400">0%</div>
+            </div>
+        </div>
+
+        <button onclick="resetToMenu()" class="w-64 py-3 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500">
+            <i class="fa-solid fa-house mr-2"></i> Return to Base
+        </button>
+    </div>
+
+    <script>
+        // --- PWA Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker failed', err));
+            });
+        }
+
+        // --- Game State ---
+        const state = {
+            score: 0,
+            streak: 0,
+            // Enhanced currentQ to store raw factors for retry logic
+            currentQ: { displayN1: 0, displayN2: 0, ans: 0, speech: "", rawN1: 0, rawN2: 0 },
+            
+            isListening: false,
+            voiceSupported: false,
+            keypadInput: "",
+            
+            mode: 'practice', 
+            operation: 'multiply', 
+            testType: 'time', 
+            practiceNums: [2, 3, 4, 5], 
+            
+            isPlaying: false,
+            timer: null,
+            timeRemaining: 60,
+            questionsCount: 0,
+            correctCount: 0,
+            targetQuestions: 20,
+            
+            badges: [],
+            
+            // New logic props
+            lastQuestionKey: null,
+            mistakesQueue: [] 
+        };
+
+        // --- Persistence (Load Badges) ---
+        function loadBadges() {
+            try {
+                const saved = localStorage.getItem('galactic_badges');
+                if (saved) {
+                    state.badges = JSON.parse(saved);
+                    renderBadges();
+                }
+            } catch (e) {
+                console.log("Could not load badges");
+            }
+        }
+
+        function saveBadge(badgeId) {
+            if (!state.badges.includes(badgeId)) {
+                state.badges.push(badgeId);
+                localStorage.setItem('galactic_badges', JSON.stringify(state.badges));
+                renderBadges();
+                return true; 
+            }
+            return false;
+        }
+
+        function renderBadges() {
+            const map = {
+                'pilot': 'badge-pilot',
+                'commander': 'badge-commander',
+                'legend': 'badge-legend',
+                'navigator': 'badge-navigator',
+                'supernova': 'badge-supernova',
+                'master': 'badge-master'
+            };
+            for (const [id, elId] of Object.entries(map)) {
+                if (state.badges.includes(id)) {
+                    document.getElementById(elId).classList.add('earned');
+                }
+            }
+        }
+
+        // --- Voice Setup ---
+        const synth = window.speechSynthesis;
+        let recognition = null;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            state.voiceSupported = true;
+
+            recognition.onstart = () => {
+                if(!state.isPlaying) return;
+                state.isListening = true;
+                updateMicUI(true);
+            };
+
+            recognition.onend = () => {
+                state.isListening = false;
+                updateMicUI(false);
+            };
+
+            recognition.onresult = (event) => {
+                if(!state.isPlaying) return;
+                const speechResult = event.results[0][0].transcript.toLowerCase();
+                processVoiceInput(speechResult);
+            };
+
+            recognition.onerror = (event) => {
+                state.isListening = false;
+                updateMicUI(false);
+                if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    showBubble("I can't hear you! Try the keypad.", 2000);
+                    toggleKeypad(true);
+                }
+            };
+        } else {
+            document.getElementById('micBtn').style.display = 'none';
+            document.getElementById('micStatus').innerText = "Voice not supported";
+            toggleKeypad(true);
+        }
+
+        // --- Configuration Logic ---
+
+        // Generate number grid
+        const grid = document.getElementById('numGrid');
+        for(let i=2; i<=12; i++) {
+            const btn = document.createElement('button');
+            btn.className = `num-toggle ${state.practiceNums.includes(i) ? 'selected' : ''}`;
+            btn.innerText = i;
+            btn.onclick = () => togglePracticeNum(i, btn);
+            grid.appendChild(btn);
+        }
+
+        function togglePracticeNum(num, btn) {
+            if(state.practiceNums.includes(num)) {
+                if(state.practiceNums.length > 1) { 
+                    state.practiceNums = state.practiceNums.filter(n => n !== num);
+                    btn.classList.remove('selected');
+                }
+            } else {
+                state.practiceNums.push(num);
+                btn.classList.add('selected');
+            }
+        }
+
+        function setMode(m) {
+            state.mode = m;
+            document.getElementById('btnModePractice').className = m === 'practice' 
+                ? "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg"
+                : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
+            
+            document.getElementById('btnModeTest').className = m === 'test' 
+                ? "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-purple-600 text-white shadow-lg"
+                : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
+
+            document.getElementById('configTest').classList.toggle('hidden', m !== 'test');
+            document.getElementById('startBtnText').innerText = m === 'practice' ? "Start Practice" : "Launch Mission";
+        }
+
+        function setOperation(op) {
+            state.operation = op;
+            const btnMul = document.getElementById('btnOpMultiply');
+            const btnDiv = document.getElementById('btnOpDivide');
+            
+            if(op === 'multiply') {
+                btnMul.classList.add('active');
+                btnDiv.classList.remove('active');
+            } else {
+                btnMul.classList.remove('active');
+                btnDiv.classList.add('active');
+            }
+        }
+
+        function setTestType(t) {
+            state.testType = t;
+            document.getElementById('btnTestTime').classList.toggle('active', t === 'time');
+            document.getElementById('btnTestCount').classList.toggle('active', t === 'count');
+        }
+
+
+        // --- Core Game Functions ---
+
+        function startGame() {
+            state.score = 0;
+            state.streak = 0;
+            state.questionsCount = 0;
+            state.correctCount = 0;
+            state.mistakesQueue = []; // Clear old session mistakes? Or keep them? Let's clear for new mission.
+            state.lastQuestionKey = null;
+            state.isPlaying = true;
+            
+            const statusEl = document.getElementById('missionStatus');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusVal = document.getElementById('statusValue');
+            const opSign = document.getElementById('operatorSign');
+
+            // Set visual operator
+            opSign.innerText = state.operation === 'multiply' ? '×' : '÷';
+            
+            if (state.mode === 'test') {
+                statusEl.classList.remove('hidden');
+                if(state.testType === 'time') {
+                    state.timeRemaining = 60;
+                    statusIcon.innerHTML = '<i class="fa-solid fa-hourglass-half"></i>';
+                    statusVal.innerText = "60s";
+                    startTimer();
+                } else {
+                    state.targetQuestions = 20;
+                    statusIcon.innerHTML = '<i class="fa-solid fa-list-ol"></i>';
+                    statusVal.innerText = `1/${state.targetQuestions}`;
+                }
+            } else {
+                statusEl.classList.add('hidden'); 
+            }
+
+            speak("Engaging thrusters!");
+            
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
+            document.getElementById('gameArea').classList.add('flex');
+            
+            updateScore();
+            nextQuestion();
+        }
+
+        function startTimer() {
+            clearInterval(state.timer);
+            state.timer = setInterval(() => {
+                if(!state.isPlaying) { clearInterval(state.timer); return; }
+                
+                state.timeRemaining--;
+                document.getElementById('statusValue').innerText = state.timeRemaining + "s";
+                
+                if(state.timeRemaining <= 0) {
+                    endGame();
+                }
+                if(state.timeRemaining <= 10) {
+                    document.getElementById('statusValue').classList.add('text-red-400');
+                }
+            }, 1000);
+        }
+
+        function nextQuestion() {
+            if(!state.isPlaying) return;
+
+            if(state.mode === 'test' && state.testType === 'count') {
+                if(state.questionsCount >= state.targetQuestions) {
+                    endGame();
+                    return;
+                }
+                document.getElementById('statusValue').innerText = `${state.questionsCount + 1}/${state.targetQuestions}`;
+            }
+
+            let baseNum, factor;
+            let isMistakeRetry = false;
+
+            // Mistake Logic: 50% chance to pick a mistake if any exist
+            // But prevent picking if it was the VERY last question asked
+            if (state.mistakesQueue.length > 0 && Math.random() < 0.5) {
+                const potentialMistake = state.mistakesQueue[0];
+                const key = `${potentialMistake.n1}-${potentialMistake.n2}-${state.operation}`;
+                
+                if (key !== state.lastQuestionKey) {
+                    const mistake = state.mistakesQueue.shift(); 
+                    baseNum = mistake.n1;
+                    factor = mistake.n2;
+                    isMistakeRetry = true;
+                }
+            }
+
+            if (!isMistakeRetry) {
+                let attempts = 0;
+                do {
+                    const idx = Math.floor(Math.random() * state.practiceNums.length);
+                    baseNum = state.practiceNums[idx]; 
+                    factor = Math.floor(Math.random() * 9) + 2; // Random 2-10
+                    
+                    const currentKey = `${baseNum}-${factor}-${state.operation}`;
+                    
+                    // If unique or if it's the only option, break
+                    if (currentKey !== state.lastQuestionKey) break;
+                    
+                    attempts++;
+                } while (attempts < 5); // Avoid infinite loop if pool is tiny
+            }
+
+            // Save key for next time
+            state.lastQuestionKey = `${baseNum}-${factor}-${state.operation}`;
+
+            let displayN1, displayN2, ans, speechQ;
+
+            if (state.operation === 'multiply') {
+                displayN1 = baseNum;
+                displayN2 = factor;
+                ans = baseNum * factor;
+                speechQ = `What is ${displayN1} times ${displayN2}?`;
+            } else {
+                displayN1 = baseNum * factor;
+                displayN2 = baseNum;
+                ans = factor;
+                speechQ = `What is ${displayN1} divided by ${displayN2}?`;
+            }
+            
+            // Store raw numbers so if they fail a division, we can queue the pair again
+            state.currentQ = { displayN1, displayN2, ans, speech: speechQ, rawN1: baseNum, rawN2: factor };
+            state.keypadInput = "";
+            document.getElementById('userAnswerDisplay').innerText = "";
+
+            // UI Update
+            const num1El = document.getElementById('num1');
+            const num2El = document.getElementById('num2');
+            
+            num1El.parentElement.classList.remove('shake');
+            num1El.innerText = displayN1;
+            num2El.innerText = displayN2;
+
+            num1El.classList.remove('pop-in');
+            num2El.classList.remove('pop-in');
+            void num1El.offsetWidth; 
+            num1El.classList.add('pop-in');
+            setTimeout(() => num2El.classList.add('pop-in'), 100);
+
+            // Ask Question logic
+            if(state.mode === 'test' && state.testType === 'time') {
+                if(state.questionsCount === 0) speak(speechQ);
+                else {
+                     if(state.voiceSupported) {
+                         try { recognition.start(); } catch(e){}
+                     }
+                }
+            } else {
+                setTimeout(() => {
+                    if(state.isPlaying) speak(speechQ);
+                }, 400);
+            }
+        }
+
+        function processVoiceInput(text) {
+            if(!state.isPlaying) return;
+
+            const wordMap = {
+                'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 
+                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+            };
+            
+            let cleanText = text.replace(/[^a-zA-Z0-9]/g, '');
+            let number = parseInt(cleanText);
+
+            if (isNaN(number)) {
+                cleanText = text.toLowerCase().trim();
+                if (wordMap[cleanText] !== undefined) {
+                    number = wordMap[cleanText];
+                }
+            }
+
+            document.getElementById('userAnswerDisplay').innerText = isNaN(number) ? "?" : number;
+
+            if (!isNaN(number)) {
+                checkAnswer(false, number);
+            } else {
+                showBubble("I didn't catch that number.", 1000);
+            }
+        }
+
+        function checkAnswer(isKeypad, val = null) {
+            if(!state.isPlaying) return;
+
+            const userAns = isKeypad ? parseInt(state.keypadInput) : val;
+
+            if (userAns === state.currentQ.ans) {
+                handleCorrect();
+            } else {
+                handleIncorrect(userAns);
+            }
+        }
+
+        function handleCorrect() {
+            state.score += 10 + (state.streak * 2);
+            state.streak++;
+            state.correctCount++;
+            state.questionsCount++;
+            updateScore();
+            
+            if(state.mode === 'practice') {
+                showBubble(getRandomPraise(), 1000);
+            }
+            
+            playSound(true);
+            
+            const mascot = document.getElementById('mascot');
+            mascot.innerText = "🚀"; 
+            mascot.classList.add('bounce');
+            document.getElementById('userAnswerDisplay').classList.add('text-green-400');
+            
+            const delay = (state.mode === 'test' && state.testType === 'time') ? 600 : 1500;
+
+            setTimeout(() => {
+                if(!state.isPlaying) return;
+                mascot.innerText = "🤖";
+                mascot.classList.remove('bounce');
+                document.getElementById('userAnswerDisplay').classList.remove('text-green-400');
+                nextQuestion();
+            }, delay);
+        }
+
+        function handleIncorrect(val) {
+            state.streak = 0;
+            state.questionsCount++;
+            updateScore();
+            
+            // Add to mistakes queue for re-asking later
+            state.mistakesQueue.push({
+                n1: state.currentQ.rawN1,
+                n2: state.currentQ.rawN2
+            });
+
+            playSound(false);
+            
+            if(state.mode === 'practice') {
+                showBubble(`It's ${state.currentQ.ans}`, 1500);
+                speak(`The answer is ${state.currentQ.ans}`);
+            } else {
+                showBubble("Miss!", 800);
+            }
+
+            const box = document.getElementById('num1').parentElement;
+            box.classList.remove('shake');
+            void box.offsetWidth;
+            box.classList.add('shake');
+
+            const delay = (state.mode === 'test' && state.testType === 'time') ? 800 : 2000;
+
+            setTimeout(() => {
+                if(!state.isPlaying) return;
+                nextQuestion();
+            }, delay);
+        }
+
+        function endGame() {
+            state.isPlaying = false;
+            clearInterval(state.timer);
+            if(recognition) try{ recognition.stop(); } catch(e){}
+
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+
+            let rank = "Space Cadet";
+            let color = "text-gray-400";
+            let earnedNewBadge = false;
+            
+            let accuracy = 0;
+            if(state.questionsCount > 0) {
+                accuracy = Math.round((state.correctCount / state.questionsCount) * 100);
+            }
+
+            // Award Badges logic - New Tiers
+            if(state.score > 200) { 
+                if(saveBadge('pilot')) earnedNewBadge = true;
+                rank = "Rocket Pilot"; color = "text-blue-400"; 
+            }
+            if(state.score > 500) { 
+                if(saveBadge('commander')) earnedNewBadge = true;
+                rank = "Mission Commander"; color = "text-purple-400"; 
+            }
+            if(state.score > 1000) { 
+                if(saveBadge('legend')) earnedNewBadge = true;
+                rank = "Galactic Legend"; color = "text-yellow-400"; 
+            }
+            if(state.score > 1500) { 
+                if(saveBadge('navigator')) earnedNewBadge = true;
+                rank = "Nebula Navigator"; color = "text-cyan-400"; 
+            }
+            if(state.score > 2000) { 
+                if(saveBadge('supernova')) earnedNewBadge = true;
+                rank = "Supernova Specialist"; color = "text-orange-400"; 
+            }
+            if(state.score > 3000) { 
+                if(saveBadge('master')) earnedNewBadge = true;
+                rank = "Universal Master"; color = "text-pink-400"; 
+            }
+
+            const rankEl = document.getElementById('rankTitle');
+            rankEl.innerText = "Rank: " + rank;
+            rankEl.className = "text-xl font-bold mb-2 " + color;
+
+            const badgeAlert = document.getElementById('newBadgeAlert');
+            if (earnedNewBadge) {
+                badgeAlert.classList.remove('hidden');
+                speak(`Mission Complete! New Badge Earned: ${rank}!`);
+            } else {
+                badgeAlert.classList.add('hidden');
+                speak(`Mission Complete! You achieved the rank of ${rank}`);
+            }
+
+            document.getElementById('finalScore').innerText = state.score;
+            document.getElementById('finalAccuracy').innerText = accuracy + "%";
+        }
+
+        function resetToMenu() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('scoreDisplay').innerText = "0";
+            document.getElementById('streakContainer').innerHTML = `
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+            `;
+            document.getElementById('statusValue').classList.remove('text-red-400');
+        }
+
+        function quitGame() {
+            state.isPlaying = false;
+            clearInterval(state.timer);
+            if(recognition) try{ recognition.stop(); } catch(e){}
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        // --- UI Helper Functions ---
+        function updateScore() {
+            document.getElementById('scoreDisplay').innerText = state.score;
+            const container = document.getElementById('streakContainer');
+            container.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                const star = document.createElement('i');
+                star.className = `fa-solid fa-star text-sm ${i < state.streak ? 'text-yellow-400 pop-in' : 'text-slate-700'}`;
+                container.appendChild(star);
+            }
+        }
+
+        function updateMicUI(listening) {
+            const btn = document.getElementById('micBtn');
+            const status = document.getElementById('micStatus');
+            
+            if (listening) {
+                btn.classList.add('pulse-mic', 'bg-green-500', 'border-green-400');
+                btn.classList.remove('bg-red-500', 'border-red-400');
+                status.innerText = "Listening...";
+                status.classList.add('text-green-400');
+            } else {
+                btn.classList.remove('pulse-mic', 'bg-green-500', 'border-green-400');
+                btn.classList.add('bg-red-500', 'border-red-400');
+                status.innerText = "Tap to answer";
+                status.classList.remove('text-green-400');
+            }
+        }
+
+        function showBubble(text, duration) {
+            const b = document.getElementById('speechBubble');
+            b.innerText = text;
+            b.classList.remove('opacity-0');
+            b.style.top = '-80px';
+            setTimeout(() => {
+                b.classList.add('opacity-0');
+                b.style.top = '-60px';
+            }, duration);
+        }
+
+        function toggleKeypad(forceOpen = false) {
+            const keypad = document.getElementById('keypad');
+            const btn = document.getElementById('toggleKeypadBtn');
+            if (keypad.classList.contains('translate-y-full') || forceOpen) {
+                keypad.classList.remove('hidden');
+                setTimeout(() => keypad.classList.remove('translate-y-full'), 10);
+                btn.innerText = "Close Keypad";
+            } else {
+                keypad.classList.add('translate-y-full');
+                setTimeout(() => keypad.classList.add('hidden'), 300);
+                btn.innerText = "Use Keypad Instead";
+            }
+        }
+
+        function addKey(num) {
+            if (state.keypadInput.length < 3) {
+                state.keypadInput += num;
+                document.getElementById('userAnswerDisplay').innerText = state.keypadInput;
+            }
+        }
+
+        function clearKey() {
+            state.keypadInput = "";
+            document.getElementById('userAnswerDisplay').innerText = "";
+        }
+
+        // --- Audio Utils ---
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.rate = 1.0;
+            utter.pitch = 1.1;
+            const voices = synth.getVoices();
+            const preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices.find(v => v.lang === 'en-US');
+            if (preferredVoice) utter.voice = preferredVoice;
+            synth.speak(utter);
+            
+            if (text.includes("What is") && state.voiceSupported && state.mode !== 'test') {
+                utter.onend = () => { try { recognition.start(); } catch(e) {} };
+            }
+        }
+
+        function playSound(success) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            if (success) {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            }
+        }
+
+        function getRandomPraise() {
+            const phrases = ["Awesome!", "Stellar!", "Cosmic!", "Perfect!", "Nice work!"];
+            return phrases[Math.floor(Math.random() * phrases.length)];
+        }
+
+        document.getElementById('micBtn').addEventListener('click', () => {
+            if (state.isListening) recognition.stop();
+            else try { recognition.start(); } catch(e) {}
+        });
+        document.getElementById('toggleKeypadBtn').addEventListener('click', () => toggleKeypad());
+        window.speechSynthesis.getVoices();
+        
+        // Initial load
+        loadBadges();
+
+    </script>
+</body>
+</html>
+
