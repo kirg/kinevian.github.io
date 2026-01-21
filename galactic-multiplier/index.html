@@ -98,22 +98,6 @@
             background: rgba(255, 255, 255, 0.3);
             transform: scale(0.95);
         }
-        
-        /* Badge Styles */
-        .badge-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-            max-height: 180px;
-            overflow-y: auto;
-            padding: 4px;
-        }
-        .badge-slot {
-            @apply flex flex-col items-center justify-center p-2 rounded-xl bg-slate-800/50 border border-slate-700 h-24 opacity-40 grayscale transition-all duration-500;
-        }
-        .badge-slot.earned {
-            @apply opacity-100 grayscale-0 border-yellow-500/50 bg-slate-800 shadow-[0_0_15px_rgba(234,179,8,0.2)];
-        }
     </style>
 
     <!-- Tailwind Config for Custom Classes (@apply works here) -->
@@ -137,6 +121,64 @@
         }
         .num-toggle.selected {
             @apply bg-green-500 border-green-400 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)] scale-110 border-2;
+        }
+
+        /* Badge Styles */
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .badge-slot {
+            @apply relative flex flex-col items-center justify-center p-2 rounded-xl bg-slate-900 border-2 border-dashed border-slate-700 h-32 transition-all duration-500;
+        }
+        .badge-slot.earned {
+            @apply bg-slate-800 border-solid border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)] -translate-y-1;
+        }
+
+        /* Icon Styling */
+        .badge-slot i.main-icon {
+            @apply text-3xl mb-2 transition-all duration-500 filter grayscale opacity-30 text-slate-500;
+        }
+        /* Specific colors apply only when earned */
+        .badge-slot.earned i.main-icon.rocket { @apply text-blue-400; }
+        .badge-slot.earned i.main-icon.astro { @apply text-purple-400; }
+        .badge-slot.earned i.main-icon.crown { @apply text-yellow-400; }
+        .badge-slot.earned i.main-icon.compass { @apply text-cyan-400; }
+        .badge-slot.earned i.main-icon.sun { @apply text-orange-400; }
+        .badge-slot.earned i.main-icon.infinity { @apply text-pink-400; }
+        
+        .badge-slot.earned i.main-icon {
+            @apply grayscale-0 opacity-100 scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)];
+        }
+
+        /* Text Styling */
+        .badge-title {
+            @apply w-full text-center text-xs font-bold text-slate-600 leading-snug mb-2 transition-colors;
+        }
+        .badge-slot.earned .badge-title {
+            @apply text-white;
+        }
+
+        /* Points Label Styling */
+        .badge-pts {
+            @apply text-[0.6rem] font-mono bg-slate-950 text-slate-600 px-2 py-1 rounded border border-slate-800 transition-colors;
+        }
+        .badge-slot.earned .badge-pts {
+            @apply text-yellow-400 border-yellow-500/30 bg-yellow-500/10;
+        }
+
+        /* Lock Icon */
+        .lock-icon {
+            @apply absolute top-3 right-3 text-slate-700 text-xs;
+        }
+        .badge-slot.earned .lock-icon {
+            display: none;
         }
     </style>
 </head>
@@ -238,49 +280,16 @@
             <p class="text-xs text-gray-400">Mission Control</p>
         </div>
 
-        <!-- Badges Display (Expanded) -->
-        <div class="w-full max-w-sm mb-6">
-            <p class="text-xs text-center text-slate-400 mb-2 uppercase tracking-widest">Hall of Fame</p>
-            <div class="badge-grid">
-                <!-- Row 1 -->
-                <div id="badge-pilot" class="badge-slot">
-                    <i class="fa-solid fa-rocket text-xl text-blue-400 mb-1"></i>
-                    <span class="text-[0.6rem] text-center leading-tight">Rocket<br>Pilot</span>
-                    <span class="text-[0.5rem] text-slate-500 mt-1">200</span>
-                </div>
-                <div id="badge-commander" class="badge-slot">
-                    <i class="fa-solid fa-user-astronaut text-xl text-purple-400 mb-1"></i>
-                    <span class="text-[0.6rem] text-center leading-tight">Mission<br>Cmdr</span>
-                    <span class="text-[0.5rem] text-slate-500 mt-1">500</span>
-                </div>
-                <div id="badge-legend" class="badge-slot">
-                    <i class="fa-solid fa-crown text-xl text-yellow-400 mb-1"></i>
-                    <span class="text-[0.6rem] text-center leading-tight">Galactic<br>Legend</span>
-                    <span class="text-[0.5rem] text-slate-500 mt-1">1000</span>
-                </div>
-                <!-- Row 2 (New) -->
-                <div id="badge-navigator" class="badge-slot">
-                    <i class="fa-solid fa-compass text-xl text-cyan-400 mb-1"></i>
-                    <span class="text-[0.6rem] text-center leading-tight">Nebula<br>Nav</span>
-                    <span class="text-[0.5rem] text-slate-500 mt-1">1500</span>
-                </div>
-                <div id="badge-supernova" class="badge-slot">
-                    <i class="fa-solid fa-sun text-xl text-orange-400 mb-1"></i>
-                    <span class="text-[0.6rem] text-center leading-tight">Supernova<br>Spec</span>
-                    <span class="text-[0.5rem] text-slate-500 mt-1">2000</span>
-                </div>
-                <div id="badge-master" class="badge-slot">
-                    <i class="fa-solid fa-infinity text-xl text-pink-400 mb-1"></i>
-                    <span class="text-[0.6rem] text-center leading-tight">Universal<br>Master</span>
-                    <span class="text-[0.5rem] text-slate-500 mt-1">3000</span>
-                </div>
-            </div>
-        </div>
+        <!-- Badges Button (Replaces Grid) -->
+        <button onclick="openHallOfFame()" class="w-full max-w-sm mb-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg">
+            <i class="fa-solid fa-trophy text-yellow-400"></i>
+            <span class="text-sm font-bold text-slate-200">View Hall of Fame</span>
+        </button>
 
         <!-- Mode Toggle -->
         <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex mb-4">
-            <button id="btnModePractice" onclick="setMode('practice')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg">Practice</button>
-            <button id="btnModeTest" onclick="setMode('test')" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all">Test Mission</button>
+            <button id="btnModePractice" onclick="setMode('practice')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg">Flight Drill</button>
+            <button id="btnModeTest" onclick="setMode('test')" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all">Live Mission</button>
         </div>
 
         <!-- Operation Toggle (New) -->
@@ -322,6 +331,58 @@
             </button>
             <p class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
         </div>
+    </div>
+
+    <!-- Separate Hall of Fame Screen -->
+    <div id="hallOfFameScreen" class="hidden absolute inset-0 bg-slate-900 z-50 flex flex-col items-center p-6">
+        <div class="mt-4 mb-6 text-center">
+            <h2 class="text-2xl font-bold mb-1 text-yellow-400"><i class="fa-solid fa-trophy mr-2"></i>Hall of Fame</h2>
+            <p class="text-xs text-gray-400">Your Achievements</p>
+        </div>
+
+        <div class="badge-grid w-full max-w-md flex-1">
+            <!-- Row 1 -->
+            <div id="badge-pilot" class="badge-slot">
+                <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                <i class="fa-solid fa-rocket main-icon rocket"></i>
+                <div class="badge-title">Rocket<br>Pilot</div>
+                <div class="badge-pts">200 pts</div>
+            </div>
+            <div id="badge-commander" class="badge-slot">
+                <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                <i class="fa-solid fa-user-astronaut main-icon astro"></i>
+                <div class="badge-title">Mission<br>Cmdr</div>
+                <div class="badge-pts">500 pts</div>
+            </div>
+            <div id="badge-legend" class="badge-slot">
+                <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                <i class="fa-solid fa-crown main-icon crown"></i>
+                <div class="badge-title">Galactic<br>Legend</div>
+                <div class="badge-pts">1000 pts</div>
+            </div>
+            <!-- Row 2 -->
+            <div id="badge-navigator" class="badge-slot">
+                <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                <i class="fa-solid fa-compass main-icon compass"></i>
+                <div class="badge-title">Nebula<br>Nav</div>
+                <div class="badge-pts">1500 pts</div>
+            </div>
+            <div id="badge-supernova" class="badge-slot">
+                <div class="lock-icon"><i class="fa-solid fa-sun main-icon sun"></i></div>
+                <div class="badge-title">Supernova<br>Spec</div>
+                <div class="badge-pts">2000 pts</div>
+            </div>
+            <div id="badge-master" class="badge-slot">
+                <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                <i class="fa-solid fa-infinity main-icon infinity"></i>
+                <div class="badge-title">Universal<br>Master</div>
+                <div class="badge-pts">3000 pts</div>
+            </div>
+        </div>
+
+        <button onclick="closeHallOfFame()" class="mt-4 w-full max-w-sm py-4 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500 flex items-center justify-center">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Return to Base
+        </button>
     </div>
 
     <!-- Game Over Screen -->
@@ -430,6 +491,17 @@
             }
         }
 
+        // --- Navigation ---
+        function openHallOfFame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('hallOfFameScreen').classList.remove('hidden');
+        }
+
+        function closeHallOfFame() {
+            document.getElementById('hallOfFameScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
         // --- Voice Setup ---
         const synth = window.speechSynthesis;
         let recognition = null;
@@ -509,7 +581,7 @@
                 : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
 
             document.getElementById('configTest').classList.toggle('hidden', m !== 'test');
-            document.getElementById('startBtnText').innerText = m === 'practice' ? "Start Practice" : "Launch Mission";
+            document.getElementById('startBtnText').innerText = m === 'practice' ? "Start Drill" : "Launch Mission";
         }
 
         function setOperation(op) {
@@ -540,7 +612,7 @@
             state.streak = 0;
             state.questionsCount = 0;
             state.correctCount = 0;
-            state.mistakesQueue = []; // Clear old session mistakes? Or keep them? Let's clear for new mission.
+            state.mistakesQueue = []; 
             state.lastQuestionKey = null;
             state.isPlaying = true;
             
@@ -568,7 +640,7 @@
                 statusEl.classList.add('hidden'); 
             }
 
-            speak("Engaging thrusters!");
+            // speak("Engaging thrusters!"); // Removed to ensure first question speaks immediately
             
             document.getElementById('startScreen').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.add('hidden');
@@ -677,14 +749,18 @@
             setTimeout(() => num2El.classList.add('pop-in'), 100);
 
             // Ask Question logic
-            if(state.mode === 'test' && state.testType === 'time') {
-                if(state.questionsCount === 0) speak(speechQ);
-                else {
-                     if(state.voiceSupported) {
-                         try { recognition.start(); } catch(e){}
-                     }
+            if (state.mode === 'test' && state.testType === 'time') {
+                // Time Attack: Silent mode for maximum speed.
+                // Just activate mic immediately (if supported) without speaking.
+                if (state.voiceSupported) {
+                    setTimeout(() => {
+                        try { 
+                            if(state.isPlaying && !state.isListening) recognition.start(); 
+                        } catch(e) {}
+                    }, 400);
                 }
             } else {
+                // Practice & Count Mode: Always speak for reinforcement
                 setTimeout(() => {
                     if(state.isPlaying) speak(speechQ);
                 }, 400);
@@ -949,8 +1025,13 @@
             if (preferredVoice) utter.voice = preferredVoice;
             synth.speak(utter);
             
-            if (text.includes("What is") && state.voiceSupported && state.mode !== 'test') {
-                utter.onend = () => { try { recognition.start(); } catch(e) {} };
+            // Fixed: Auto-listen logic now works in all modes
+            if (text.includes("What is") && state.voiceSupported) {
+                utter.onend = () => { 
+                    try { 
+                        if(state.isPlaying && !state.isListening) recognition.start(); 
+                    } catch(e) {} 
+                };
             }
         }
 
@@ -999,4 +1080,3 @@
     </script>
 </body>
 </html>
-
