@@ -1,6 +1,6 @@
 {
   "name": "Galactic Multiplier",
-  "short_name": "GalacticMath",
+  "short_name": "GalacticMultiplier",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",

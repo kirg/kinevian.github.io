@@ -1,4 +1,4 @@
-const CACHE_NAME = 'galactic-math-v1';
+const CACHE_NAME = 'galactic-multiplier-v1';
 const ASSETS = [
   './index.html',
   './manifest.json',
