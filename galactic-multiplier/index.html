@@ -459,6 +459,32 @@
             document.getElementById('installBtn').classList.add('hidden');
         }
 
+        // --- Wake Lock (Prevent Screen Sleep) ---
+        let wakeLock = null;
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock active');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Screen Wake Lock released');
+                    });
+                } catch (err) {
+                    // Fail gracefully if not allowed (e.g. low battery or permission policy)
+                    if (err.name !== 'NotAllowedError') {
+                        console.log('Wake Lock request failed:', err.name);
+                    }
+                }
+            }
+        }
+
+        // Re-acquire lock if the user switches tabs/apps and comes back
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
         // --- Game State ---
         const state = {
             score: 0,
@@ -469,6 +495,7 @@
             isListening: false,
             voiceSupported: false,
             keypadInput: "",
+            usingKeypad: false, // New flag to track input method
             
             mode: 'practice', 
             operation: 'multiply', 
@@ -676,6 +703,9 @@
             state.lastQuestionKey = null;
             state.isPlaying = true;
             
+            // Request screen to stay on
+            requestWakeLock();
+            
             const statusEl = document.getElementById('missionStatus');
             const statusIcon = document.getElementById('statusIcon');
             const statusVal = document.getElementById('statusValue');
@@ -814,8 +844,8 @@
             // Ask Question logic
             if (state.mode === 'test' && state.testType === 'time') {
                 // Time Attack: Silent mode for maximum speed.
-                // Just activate mic immediately (if supported) without speaking.
-                if (state.voiceSupported) {
+                // Just activate mic immediately (if supported AND not using keypad) without speaking.
+                if (state.voiceSupported && !state.usingKeypad) {
                     setTimeout(() => {
                         try { 
                             if(state.isPlaying && !state.isListening) recognition.start(); 
@@ -831,7 +861,8 @@
         }
 
         function processVoiceInput(text) {
-            if(!state.isPlaying) return;
+            // Ignore voice if using keypad to prevent overwriting
+            if(!state.isPlaying || state.usingKeypad) return;
 
             const wordMap = {
                 'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 
@@ -1054,14 +1085,29 @@
         function toggleKeypad(forceOpen = false) {
             const keypad = document.getElementById('keypad');
             const btn = document.getElementById('toggleKeypadBtn');
-            if (keypad.classList.contains('translate-y-full') || forceOpen) {
+            const isOpening = keypad.classList.contains('translate-y-full') || forceOpen;
+
+            if (isOpening) {
                 keypad.classList.remove('hidden');
                 setTimeout(() => keypad.classList.remove('translate-y-full'), 10);
                 btn.innerText = "Close Keypad";
+                
+                // Switch to Keypad mode: Stop mic
+                state.usingKeypad = true;
+                if (state.isListening && recognition) {
+                    recognition.stop();
+                    updateMicUI(false);
+                }
             } else {
                 keypad.classList.add('translate-y-full');
                 setTimeout(() => keypad.classList.add('hidden'), 300);
                 btn.innerText = "Use Keypad Instead";
+                
+                // Switch back to Voice mode
+                state.usingKeypad = false;
+                if(state.isPlaying && state.voiceSupported) {
+                     try { recognition.start(); } catch(e){}
+                }
             }
         }
 
@@ -1088,8 +1134,8 @@
             if (preferredVoice) utter.voice = preferredVoice;
             synth.speak(utter);
             
-            // Fixed: Auto-listen logic now works in all modes
-            if (text.includes("What is") && state.voiceSupported) {
+            // Fixed: Auto-listen logic now works in all modes but respects keypad
+            if (text.includes("What is") && state.voiceSupported && !state.usingKeypad) {
                 utter.onend = () => { 
                     try { 
                         if(state.isPlaying && !state.isListening) recognition.start(); 
