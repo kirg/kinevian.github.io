@@ -204,7 +204,7 @@
     <!-- Header / Stats -->
     <div class="w-full max-w-md flex justify-between items-center z-10 pt-2 relative">
         <div class="flex flex-col">
-            <span class="text-xs text-blue-300 uppercase tracking-widest">Score</span>
+            <span class="text-xs text-blue-300 uppercase tracking-widest" id="lblScore">Score</span>
             <span id="scoreDisplay" class="text-2xl font-bold text-blue-400">0</span>
         </div>
         
@@ -215,7 +215,7 @@
         </div>
 
         <div class="flex flex-col items-end">
-            <span class="text-xs text-yellow-300 uppercase tracking-widest">Streak</span>
+            <span class="text-xs text-yellow-300 uppercase tracking-widest" id="lblStreak">Streak</span>
             <div class="flex gap-1" id="streakContainer">
                 <i class="fa-regular fa-star text-yellow-500/30"></i>
                 <i class="fa-regular fa-star text-yellow-500/30"></i>
@@ -237,7 +237,7 @@
 
         <!-- Question -->
         <div class="text-center mb-8">
-            <div class="text-xl text-purple-300 mb-2">What is...</div>
+            <div class="text-xl text-purple-300 mb-2" id="lblWhatIs">What is...</div>
             <div class="flex items-center justify-center gap-4 text-6xl font-bold neon-text bg-slate-900/50 p-6 rounded-3xl border border-purple-500/30 backdrop-blur-sm">
                 <span id="num1" class="text-purple-400">?</span>
                 <span id="operatorSign" class="text-white text-4xl">×</span>
@@ -263,7 +263,7 @@
             <button id="toggleKeypadBtn" class="text-sm text-blue-300 underline decoration-dotted mt-2">
                 Use Keypad Instead
             </button>
-            <button onclick="quitGame()" class="text-xs text-red-400/60 mt-4 hover:text-red-400">Abort Mission</button>
+            <button onclick="quitGame()" id="btnAbort" class="text-xs text-red-400/60 mt-4 hover:text-red-400">Abort Mission</button>
         </div>
     </div>
 
@@ -283,7 +283,7 @@
             <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(0)">0</button>
             <button class="key-btn h-14 rounded-xl text-xl font-bold bg-green-500/20 text-green-300 border-green-500/30" onclick="checkAnswer(true)">OK</button>
         </div>
-        <button onclick="toggleKeypad()" class="w-full text-center mt-4 text-gray-500 text-sm">Close Keypad</button>
+        <button onclick="toggleKeypad()" id="btnCloseKeypad" class="w-full text-center mt-4 text-gray-500 text-sm">Close Keypad</button>
     </div>
 
     <!-- Start / Configuration Screen -->
@@ -294,15 +294,20 @@
             <i class="fa-solid fa-download text-white text-lg"></i>
         </button>
 
+        <!-- Language Toggle (Top Left) -->
+        <button onclick="toggleLanguage()" id="langBtn" class="absolute top-4 left-4 w-12 h-12 bg-slate-800 border border-slate-600 rounded-full flex items-center justify-center shadow-lg text-2xl z-50">
+            🇺🇸
+        </button>
+
         <div class="mt-2 mb-4 text-center">
-            <h1 class="text-3xl font-bold mb-1 neon-text font-['Press_Start_2P'] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-tight">GALACTIC<br>MULTIPLIER</h1>
-            <p class="text-xs text-gray-400">Mission Control</p>
+            <h1 id="appTitle" class="text-3xl font-bold mb-1 neon-text font-['Press_Start_2P'] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-tight">GALACTIC<br>MULTIPLIER</h1>
+            <p id="lblMissionControl" class="text-xs text-gray-400">Mission Control</p>
         </div>
 
         <!-- Badges Button (Replaces Grid) -->
         <button onclick="openHallOfFame()" class="w-full max-w-sm mb-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg">
             <i class="fa-solid fa-trophy text-yellow-400"></i>
-            <span class="text-sm font-bold text-slate-200">View Hall of Fame</span>
+            <span id="btnViewHall" class="text-sm font-bold text-slate-200">View Hall of Fame</span>
         </button>
 
         <!-- Mode Toggle -->
@@ -314,16 +319,16 @@
         <!-- Operation Toggle (New) -->
         <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex gap-2 mb-6">
             <button id="btnOpMultiply" onclick="setOperation('multiply')" class="op-btn active">
-                <i class="fa-solid fa-xmark mr-1"></i> Multiply
+                <i class="fa-solid fa-xmark mr-1"></i> <span id="lblMultiply">Multiply</span>
             </button>
             <button id="btnOpDivide" onclick="setOperation('divide')" class="op-btn">
-                <i class="fa-solid fa-divide mr-1"></i> Divide
+                <i class="fa-solid fa-divide mr-1"></i> <span id="lblDivide">Divide</span>
             </button>
         </div>
 
         <!-- Shared Number Configuration -->
         <div class="w-full max-w-sm mb-6">
-            <p class="text-sm text-center text-blue-200 mb-3">Select Target Numbers:</p>
+            <p id="lblSelectTargets" class="text-sm text-center text-blue-200 mb-3">Select Target Numbers:</p>
             <div class="grid grid-cols-4 gap-3 justify-items-center" id="numGrid">
                 <!-- Generated by JS -->
             </div>
@@ -331,7 +336,7 @@
 
         <!-- Test Configuration (Only visible in test mode) -->
         <div id="configTest" class="w-full max-w-sm hidden mb-6">
-            <p class="text-sm text-center text-blue-200 mb-3">Select Mission Type:</p>
+            <p id="lblSelectMission" class="text-sm text-center text-blue-200 mb-3">Select Mission Type:</p>
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="setTestType('time')" id="btnTestTime" class="mode-btn active flex flex-col items-center justify-center py-4">
                     <i class="fa-solid fa-stopwatch text-xl mb-1"></i>
@@ -348,15 +353,15 @@
             <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-xl font-bold shadow-xl shadow-purple-900/50 hover:scale-105 transition-transform flex items-center justify-center gap-3">
                 <i class="fa-solid fa-rocket"></i> <span id="startBtnText">Start Drill</span>
             </button>
-            <p class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
+            <p id="lblEnableMic" class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
         </div>
     </div>
 
     <!-- Separate Hall of Fame Screen -->
     <div id="hallOfFameScreen" class="hidden absolute inset-0 bg-slate-900 z-50 flex flex-col items-center p-6">
         <div class="mt-4 mb-6 text-center">
-            <h2 class="text-2xl font-bold mb-1 text-yellow-400"><i class="fa-solid fa-trophy mr-2"></i>Hall of Fame</h2>
-            <p class="text-xs text-gray-400">Your Achievements</p>
+            <h2 id="lblHallTitle" class="text-2xl font-bold mb-1 text-yellow-400"><i class="fa-solid fa-trophy mr-2"></i>Hall of Fame</h2>
+            <p id="lblAchievements" class="text-xs text-gray-400">Your Achievements</p>
         </div>
 
         <div class="badge-grid w-full max-w-md flex-1">
@@ -399,7 +404,7 @@
             </div>
         </div>
 
-        <button onclick="closeHallOfFame()" class="mt-4 w-full max-w-sm py-4 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500 flex items-center justify-center">
+        <button onclick="closeHallOfFame()" id="btnReturnHall" class="mt-4 w-full max-w-sm py-4 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500 flex items-center justify-center">
             <i class="fa-solid fa-arrow-left mr-2"></i> Return to Base
         </button>
     </div>
@@ -409,7 +414,7 @@
         <div class="mb-4">
             <i class="fa-solid fa-medal text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] bounce"></i>
         </div>
-        <h2 class="text-3xl font-bold text-white mb-1">Mission Complete!</h2>
+        <h2 id="lblMissionComplete" class="text-3xl font-bold text-white mb-1">Mission Complete!</h2>
         <p id="rankTitle" class="text-xl text-purple-300 font-bold mb-2">Rank: Space Cadet</p>
         <div id="newBadgeAlert" class="hidden bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 rounded-lg px-3 py-1 text-sm font-bold mb-4 animate-pulse">
             New Badge Earned!
@@ -417,21 +422,97 @@
 
         <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <div class="text-gray-400 text-xs uppercase">Final Score</div>
+                <div id="lblFinalScore" class="text-gray-400 text-xs uppercase">Final Score</div>
                 <div id="finalScore" class="text-2xl font-bold text-blue-400">0</div>
             </div>
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <div class="text-gray-400 text-xs uppercase">Accuracy</div>
+                <div id="lblAccuracy" class="text-gray-400 text-xs uppercase">Accuracy</div>
                 <div id="finalAccuracy" class="text-2xl font-bold text-green-400">0%</div>
             </div>
         </div>
 
-        <button onclick="resetToMenu()" class="w-64 py-3 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500">
+        <button onclick="resetToMenu()" id="btnReturnOver" class="w-64 py-3 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500">
             <i class="fa-solid fa-house mr-2"></i> Return to Base
         </button>
     </div>
 
     <script>
+        // --- Translations ---
+        const i18n = {
+            'en-US': {
+                title: "GALACTIC<br>MULTIPLIER",
+                missionControl: "Mission Control",
+                viewHall: "View Hall of Fame",
+                flightDrill: "Flight Drill",
+                liveMission: "Live Mission",
+                multiply: "Multiply",
+                divide: "Divide",
+                selectTargets: "Select Target Numbers:",
+                selectMission: "Select Mission Type:",
+                startDrill: "Start Drill",
+                launchMission: "Launch Mission",
+                enableMic: "Enable microphone for voice mode",
+                score: "Score",
+                streak: "Streak",
+                whatIs: "What is...",
+                tapSpeak: "Tap to speak answer",
+                listening: "Listening...",
+                keypad: "Use Keypad Instead",
+                closeKeypad: "Close Keypad",
+                abort: "Abort Mission",
+                questionMul: (n1, n2) => `What is ${n1} times ${n2}?`,
+                questionDiv: (n1, n2) => `What is ${n1} divided by ${n2}?`,
+                praise: ["Awesome!", "Stellar!", "Cosmic!", "Perfect!", "Nice work!"],
+                miss: "Miss!",
+                finalScore: "Final Score",
+                accuracy: "Accuracy",
+                returnBase: "Return to Base",
+                hallTitle: "Hall of Fame",
+                achievements: "Your Achievements",
+                missionComplete: "Mission Complete!",
+                rank: "Rank: ",
+                newBadge: "New Badge Earned!",
+                newBadgeSpoken: (rank) => `Mission Complete! New Badge Earned: ${rank}!`,
+                completeSpoken: (rank) => `Mission Complete! You achieved the rank of ${rank}`
+            },
+            'de-DE': {
+                title: "GALAKTISCHER<br>MULTIPLIKATOR",
+                missionControl: "Missionskontrolle",
+                viewHall: "Ruhmeshalle ansehen",
+                flightDrill: "Flugübung",
+                liveMission: "Echte Mission",
+                multiply: "Multiplizieren",
+                divide: "Dividieren",
+                selectTargets: "Zielzahlen wählen:",
+                selectMission: "Missionstyp wählen:",
+                startDrill: "Übung starten",
+                launchMission: "Mission starten",
+                enableMic: "Mikrofon aktivieren",
+                score: "Punkte",
+                streak: "Serie",
+                whatIs: "Wieviel ist...",
+                tapSpeak: "Tippen zum Sprechen",
+                listening: "Zuhören...",
+                keypad: "Tastatur benutzen",
+                closeKeypad: "Tastatur schließen",
+                abort: "Mission abbrechen",
+                questionMul: (n1, n2) => `Wieviel ist ${n1} mal ${n2}?`,
+                questionDiv: (n1, n2) => `Wieviel ist ${n1} geteilt durch ${n2}?`,
+                praise: ["Super!", "Klasse!", "Kosmisch!", "Perfekt!", "Gut gemacht!"],
+                miss: "Daneben!",
+                finalScore: "Endpunktzahl",
+                accuracy: "Genauigkeit",
+                returnBase: "Zur Basis",
+                hallTitle: "Ruhmeshalle",
+                achievements: "Deine Erfolge",
+                missionComplete: "Mission erfüllt!",
+                rank: "Rang: ",
+                newBadge: "Neuer Rang erreicht!",
+                newBadgeSpoken: (rank) => `Mission erfüllt! Neuer Rang: ${rank}!`,
+                completeSpoken: (rank) => `Mission erfüllt! Du hast den Rang ${rank} erreicht`
+            }
+        };
+
         // --- PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -470,7 +551,6 @@
                         console.log('Screen Wake Lock released');
                     });
                 } catch (err) {
-                    // Fail gracefully if not allowed (e.g. low battery or permission policy)
                     if (err.name !== 'NotAllowedError') {
                         console.log('Wake Lock request failed:', err.name);
                     }
@@ -478,7 +558,6 @@
             }
         }
 
-        // Re-acquire lock if the user switches tabs/apps and comes back
         document.addEventListener('visibilitychange', async () => {
             if (wakeLock !== null && document.visibilityState === 'visible') {
                 await requestWakeLock();
@@ -489,34 +568,73 @@
         const state = {
             score: 0,
             streak: 0,
-            // Enhanced currentQ to store raw factors for retry logic
             currentQ: { displayN1: 0, displayN2: 0, ans: 0, speech: "", rawN1: 0, rawN2: 0 },
-            
             isListening: false,
             voiceSupported: false,
             keypadInput: "",
-            usingKeypad: false, // New flag to track input method
-            
+            usingKeypad: false,
             mode: 'practice', 
             operation: 'multiply', 
             testType: 'time', 
             practiceNums: [2, 3, 4, 5], 
-            
             isPlaying: false,
             timer: null,
             timeRemaining: 60,
             questionsCount: 0,
             correctCount: 0,
             targetQuestions: 20,
-            
             badges: [],
-            
-            // New logic props
             lastQuestionKey: null,
             mistakesQueue: [],
-            micRetries: 0,       // Track how many times we've restarted
-            maxMicRetries: 3     // Allow 3 restarts (approx 20-30s total listening)
+            micRetries: 0,
+            maxMicRetries: 3,
+            language: 'en-US' // Default language
         };
+
+        // --- Language Utils ---
+        function toggleLanguage() {
+            state.language = state.language === 'en-US' ? 'de-DE' : 'en-US';
+            document.getElementById('langBtn').innerText = state.language === 'en-US' ? '🇺🇸' : '🇩🇪';
+            updateTexts();
+            // Update recognition language immediately
+            if (recognition) recognition.lang = state.language;
+        }
+
+        function updateTexts() {
+            const t = i18n[state.language];
+            document.getElementById('appTitle').innerHTML = t.title;
+            document.getElementById('lblMissionControl').innerText = t.missionControl;
+            document.getElementById('btnViewHall').innerText = t.viewHall;
+            document.getElementById('btnModePractice').innerText = t.flightDrill;
+            document.getElementById('btnModeTest').innerText = t.liveMission;
+            document.getElementById('lblMultiply').innerText = t.multiply;
+            document.getElementById('lblDivide').innerText = t.divide;
+            document.getElementById('lblSelectTargets').innerText = t.selectTargets;
+            document.getElementById('lblSelectMission').innerText = t.selectMission;
+            document.getElementById('startBtnText').innerText = state.mode === 'practice' ? t.startDrill : t.launchMission;
+            document.getElementById('lblEnableMic').innerText = t.enableMic;
+            document.getElementById('lblScore').innerText = t.score;
+            document.getElementById('lblStreak').innerText = t.streak;
+            document.getElementById('lblWhatIs').innerText = t.whatIs;
+            document.getElementById('micStatus').innerText = state.isListening ? t.listening : t.tapSpeak;
+            document.getElementById('toggleKeypadBtn').innerText = state.usingKeypad ? t.closeKeypad : t.keypad;
+            document.getElementById('btnCloseKeypad').innerText = t.closeKeypad;
+            document.getElementById('btnAbort').innerText = t.abort;
+            document.getElementById('lblFinalScore').innerText = t.finalScore;
+            document.getElementById('lblAccuracy').innerText = t.accuracy;
+            document.getElementById('btnReturnOver').innerHTML = `<i class="fa-solid fa-house mr-2"></i> ${t.returnBase}`;
+            document.getElementById('lblHallTitle').innerHTML = `<i class="fa-solid fa-trophy mr-2"></i>${t.hallTitle}`;
+            document.getElementById('lblAchievements').innerText = t.achievements;
+            document.getElementById('btnReturnHall').innerHTML = `<i class="fa-solid fa-arrow-left mr-2"></i> ${t.returnBase}`;
+            document.getElementById('lblMissionComplete').innerText = t.missionComplete;
+            
+            // Check rank title text update (only if game over screen visible really matters, but good to have)
+            const rankEl = document.getElementById('rankTitle');
+            if(rankEl.innerText.includes(":")) {
+               const currentRankName = rankEl.innerText.split(":")[1].trim(); // simple preserve
+               rankEl.innerText = t.rank + " " + currentRankName;
+            }
+        }
 
         // --- Persistence (Load Badges) ---
         function loadBadges() {
@@ -576,7 +694,7 @@
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.lang = 'en-US';
+            recognition.lang = state.language; // Initial lang
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
             state.voiceSupported = true;
@@ -588,42 +706,31 @@
             };
 
             recognition.onend = () => {
-                // Auto-restart logic: If game is playing and we haven't hit max retries, restart mic
                 if (state.isPlaying && state.micRetries < state.maxMicRetries) {
                     state.micRetries++;
-                    // console.log("Silence detected, extending listening time...");
                     try {
                         recognition.start();
-                        return; // Exit early so we don't turn off UI
-                    } catch(e) {
-                        // If restart fails, proceed to turn off
-                    }
+                        return; 
+                    } catch(e) {}
                 }
-
                 state.isListening = false;
                 updateMicUI(false);
             };
 
             recognition.onresult = (event) => {
                 if(!state.isPlaying) return;
-                
-                // We got an answer, so stop auto-restarting for this question
                 state.micRetries = state.maxMicRetries;
-                
                 const speechResult = event.results[0][0].transcript.toLowerCase();
                 processVoiceInput(speechResult);
             };
 
             recognition.onerror = (event) => {
-                // If error is 'no-speech' (silence), let onend handle the retry
-                // For other errors (like not-allowed), stop.
                 if (event.error !== 'no-speech') {
                     state.isListening = false;
                     updateMicUI(false);
                 }
-                
                 if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    showBubble("I can't hear you! Try the keypad.", 2000);
+                    showBubble(i18n[state.language].keypad, 2000);
                     toggleKeypad(true);
                 }
             };
@@ -634,8 +741,6 @@
         }
 
         // --- Configuration Logic ---
-
-        // Generate number grid
         const grid = document.getElementById('numGrid');
         for(let i=2; i<=12; i++) {
             const btn = document.createElement('button');
@@ -659,6 +764,7 @@
 
         function setMode(m) {
             state.mode = m;
+            const t = i18n[state.language];
             document.getElementById('btnModePractice').className = m === 'practice' 
                 ? "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg"
                 : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
@@ -668,7 +774,7 @@
                 : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
 
             document.getElementById('configTest').classList.toggle('hidden', m !== 'test');
-            document.getElementById('startBtnText').innerText = m === 'practice' ? "Start Drill" : "Launch Mission";
+            document.getElementById('startBtnText').innerText = m === 'practice' ? t.startDrill : t.launchMission;
         }
 
         function setOperation(op) {
@@ -691,9 +797,7 @@
             document.getElementById('btnTestCount').classList.toggle('active', t === 'count');
         }
 
-
         // --- Core Game Functions ---
-
         function startGame() {
             state.score = 0;
             state.streak = 0;
@@ -703,7 +807,6 @@
             state.lastQuestionKey = null;
             state.isPlaying = true;
             
-            // Request screen to stay on
             requestWakeLock();
             
             const statusEl = document.getElementById('missionStatus');
@@ -711,7 +814,6 @@
             const statusVal = document.getElementById('statusValue');
             const opSign = document.getElementById('operatorSign');
 
-            // Set visual operator
             opSign.innerText = state.operation === 'multiply' ? '×' : '÷';
             
             if (state.mode === 'test') {
@@ -729,8 +831,6 @@
             } else {
                 statusEl.classList.add('hidden'); 
             }
-
-            // speak("Engaging thrusters!"); // Removed to ensure first question speaks immediately
             
             document.getElementById('startScreen').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.add('hidden');
@@ -745,23 +845,15 @@
             clearInterval(state.timer);
             state.timer = setInterval(() => {
                 if(!state.isPlaying) { clearInterval(state.timer); return; }
-                
                 state.timeRemaining--;
                 document.getElementById('statusValue').innerText = state.timeRemaining + "s";
-                
-                if(state.timeRemaining <= 0) {
-                    endGame();
-                }
-                if(state.timeRemaining <= 10) {
-                    document.getElementById('statusValue').classList.add('text-red-400');
-                }
+                if(state.timeRemaining <= 0) endGame();
+                if(state.timeRemaining <= 10) document.getElementById('statusValue').classList.add('text-red-400');
             }, 1000);
         }
 
         function nextQuestion() {
             if(!state.isPlaying) return;
-
-            // Reset mic retries for the new question
             state.micRetries = 0;
 
             if(state.mode === 'test' && state.testType === 'count') {
@@ -775,12 +867,9 @@
             let baseNum, factor;
             let isMistakeRetry = false;
 
-            // Mistake Logic: 50% chance to pick a mistake if any exist
-            // But prevent picking if it was the VERY last question asked
             if (state.mistakesQueue.length > 0 && Math.random() < 0.5) {
                 const potentialMistake = state.mistakesQueue[0];
                 const key = `${potentialMistake.n1}-${potentialMistake.n2}-${state.operation}`;
-                
                 if (key !== state.lastQuestionKey) {
                     const mistake = state.mistakesQueue.shift(); 
                     baseNum = mistake.n1;
@@ -794,40 +883,34 @@
                 do {
                     const idx = Math.floor(Math.random() * state.practiceNums.length);
                     baseNum = state.practiceNums[idx]; 
-                    factor = Math.floor(Math.random() * 9) + 2; // Random 2-10
-                    
+                    factor = Math.floor(Math.random() * 9) + 2; 
                     const currentKey = `${baseNum}-${factor}-${state.operation}`;
-                    
-                    // If unique or if it's the only option, break
                     if (currentKey !== state.lastQuestionKey) break;
-                    
                     attempts++;
-                } while (attempts < 5); // Avoid infinite loop if pool is tiny
+                } while (attempts < 5); 
             }
 
-            // Save key for next time
             state.lastQuestionKey = `${baseNum}-${factor}-${state.operation}`;
 
             let displayN1, displayN2, ans, speechQ;
+            const t = i18n[state.language];
 
             if (state.operation === 'multiply') {
                 displayN1 = baseNum;
                 displayN2 = factor;
                 ans = baseNum * factor;
-                speechQ = `What is ${displayN1} times ${displayN2}?`;
+                speechQ = t.questionMul(displayN1, displayN2);
             } else {
                 displayN1 = baseNum * factor;
                 displayN2 = baseNum;
                 ans = factor;
-                speechQ = `What is ${displayN1} divided by ${displayN2}?`;
+                speechQ = t.questionDiv(displayN1, displayN2);
             }
             
-            // Store raw numbers so if they fail a division, we can queue the pair again
             state.currentQ = { displayN1, displayN2, ans, speech: speechQ, rawN1: baseNum, rawN2: factor };
             state.keypadInput = "";
             document.getElementById('userAnswerDisplay').innerText = "";
 
-            // UI Update
             const num1El = document.getElementById('num1');
             const num2El = document.getElementById('num2');
             
@@ -841,10 +924,7 @@
             num1El.classList.add('pop-in');
             setTimeout(() => num2El.classList.add('pop-in'), 100);
 
-            // Ask Question logic
             if (state.mode === 'test' && state.testType === 'time') {
-                // Time Attack: Silent mode for maximum speed.
-                // Just activate mic immediately (if supported AND not using keypad) without speaking.
                 if (state.voiceSupported && !state.usingKeypad) {
                     setTimeout(() => {
                         try { 
@@ -853,7 +933,6 @@
                     }, 400);
                 }
             } else {
-                // Practice & Count Mode: Always speak for reinforcement
                 setTimeout(() => {
                     if(state.isPlaying) speak(speechQ);
                 }, 400);
@@ -861,15 +940,20 @@
         }
 
         function processVoiceInput(text) {
-            // Ignore voice if using keypad to prevent overwriting
             if(!state.isPlaying || state.usingKeypad) return;
 
+            // Mapping for English and German numbers
             const wordMap = {
+                // English
                 'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 
-                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+                // German
+                'null': 0, 'eins': 1, 'zwei': 2, 'drei': 3, 'vier': 4,
+                'fünf': 5, 'sechs': 6, 'sieben': 7, 'acht': 8, 'neun': 9, 'zehn': 10,
+                'elf': 11, 'zwölf': 12
             };
             
-            let cleanText = text.replace(/[^a-zA-Z0-9]/g, '');
+            let cleanText = text.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, ''); // Allow German chars
             let number = parseInt(cleanText);
 
             if (isNaN(number)) {
@@ -884,15 +968,13 @@
             if (!isNaN(number)) {
                 checkAnswer(false, number);
             } else {
-                showBubble("I didn't catch that number.", 1000);
+                showBubble("?", 1000);
             }
         }
 
         function checkAnswer(isKeypad, val = null) {
             if(!state.isPlaying) return;
-
             const userAns = isKeypad ? parseInt(state.keypadInput) : val;
-
             if (userAns === state.currentQ.ans) {
                 handleCorrect();
             } else {
@@ -922,7 +1004,7 @@
 
             setTimeout(() => {
                 if(!state.isPlaying) return;
-                mascot.innerText = "🛸"; // Reset to UFO
+                mascot.innerText = "🛸"; 
                 mascot.classList.remove('bounce');
                 document.getElementById('userAnswerDisplay').classList.remove('text-green-400');
                 nextQuestion();
@@ -934,7 +1016,6 @@
             state.questionsCount++;
             updateScore();
             
-            // Add to mistakes queue for re-asking later
             state.mistakesQueue.push({
                 n1: state.currentQ.rawN1,
                 n2: state.currentQ.rawN2
@@ -943,10 +1024,11 @@
             playSound(false);
             
             if(state.mode === 'practice') {
-                showBubble(`It's ${state.currentQ.ans}`, 1500);
-                speak(`The answer is ${state.currentQ.ans}`);
+                const t = i18n[state.language];
+                showBubble(t.correct(state.currentQ.ans), 1500);
+                speak(t.correct(state.currentQ.ans));
             } else {
-                showBubble("Miss!", 800);
+                showBubble(i18n[state.language].miss, 800);
             }
 
             const box = document.getElementById('num1').parentElement;
@@ -979,7 +1061,6 @@
                 accuracy = Math.round((state.correctCount / state.questionsCount) * 100);
             }
 
-            // Award Badges logic - New Tiers
             if(state.score > 200) { 
                 if(saveBadge('pilot')) earnedNewBadge = true;
                 rank = "Rocket Pilot"; color = "text-blue-400"; 
@@ -1005,17 +1086,19 @@
                 rank = "Universal Master"; color = "text-pink-400"; 
             }
 
+            const t = i18n[state.language];
             const rankEl = document.getElementById('rankTitle');
-            rankEl.innerText = "Rank: " + rank;
+            rankEl.innerText = t.rank + " " + rank;
             rankEl.className = "text-xl font-bold mb-2 " + color;
 
             const badgeAlert = document.getElementById('newBadgeAlert');
+            badgeAlert.innerText = t.newBadge;
             if (earnedNewBadge) {
                 badgeAlert.classList.remove('hidden');
-                speak(`Mission Complete! New Badge Earned: ${rank}!`);
+                speak(t.newBadgeSpoken(rank));
             } else {
                 badgeAlert.classList.add('hidden');
-                speak(`Mission Complete! You achieved the rank of ${rank}`);
+                speak(t.completeSpoken(rank));
             }
 
             document.getElementById('finalScore').innerText = state.score;
@@ -1057,16 +1140,17 @@
         function updateMicUI(listening) {
             const btn = document.getElementById('micBtn');
             const status = document.getElementById('micStatus');
+            const t = i18n[state.language];
             
             if (listening) {
                 btn.classList.add('pulse-mic', 'bg-green-500', 'border-green-400');
                 btn.classList.remove('bg-red-500', 'border-red-400');
-                status.innerText = "Listening...";
+                status.innerText = t.listening;
                 status.classList.add('text-green-400');
             } else {
                 btn.classList.remove('pulse-mic', 'bg-green-500', 'border-green-400');
                 btn.classList.add('bg-red-500', 'border-red-400');
-                status.innerText = "Tap to answer";
+                status.innerText = t.tapSpeak;
                 status.classList.remove('text-green-400');
             }
         }
@@ -1086,13 +1170,13 @@
             const keypad = document.getElementById('keypad');
             const btn = document.getElementById('toggleKeypadBtn');
             const isOpening = keypad.classList.contains('translate-y-full') || forceOpen;
+            const t = i18n[state.language];
 
             if (isOpening) {
                 keypad.classList.remove('hidden');
                 setTimeout(() => keypad.classList.remove('translate-y-full'), 10);
-                btn.innerText = "Close Keypad";
+                btn.innerText = t.closeKeypad;
                 
-                // Switch to Keypad mode: Stop mic
                 state.usingKeypad = true;
                 if (state.isListening && recognition) {
                     recognition.stop();
@@ -1101,9 +1185,8 @@
             } else {
                 keypad.classList.add('translate-y-full');
                 setTimeout(() => keypad.classList.add('hidden'), 300);
-                btn.innerText = "Use Keypad Instead";
+                btn.innerText = t.keypad;
                 
-                // Switch back to Voice mode
                 state.usingKeypad = false;
                 if(state.isPlaying && state.voiceSupported) {
                      try { recognition.start(); } catch(e){}
@@ -1130,12 +1213,23 @@
             utter.rate = 1.0;
             utter.pitch = 1.1;
             const voices = synth.getVoices();
-            const preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices.find(v => v.lang === 'en-US');
-            if (preferredVoice) utter.voice = preferredVoice;
+            
+            // Language selection logic
+            let preferredVoice = null;
+            if (state.language === 'de-DE') {
+                preferredVoice = voices.find(v => v.lang.includes('de-DE') || v.lang.includes('German'));
+            } else {
+                preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices.find(v => v.lang === 'en-US');
+            }
+            
+            if (preferredVoice) {
+                utter.voice = preferredVoice;
+            }
+            utter.lang = state.language;
+
             synth.speak(utter);
             
-            // Fixed: Auto-listen logic now works in all modes but respects keypad
-            if (text.includes("What is") && state.voiceSupported && !state.usingKeypad) {
+            if (text.includes(i18n[state.language].whatIs.split('...')[0]) && state.voiceSupported && !state.usingKeypad) {
                 utter.onend = () => { 
                     try { 
                         if(state.isPlaying && !state.isListening) recognition.start(); 
@@ -1172,7 +1266,7 @@
         }
 
         function getRandomPraise() {
-            const phrases = ["Awesome!", "Stellar!", "Cosmic!", "Perfect!", "Nice work!"];
+            const phrases = i18n[state.language].praise;
             return phrases[Math.floor(Math.random() * phrases.length)];
         }
 
