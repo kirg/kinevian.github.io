@@ -462,6 +462,7 @@
                 abort: "Abort Mission",
                 questionMul: (n1, n2) => `What is ${n1} times ${n2}?`,
                 questionDiv: (n1, n2) => `What is ${n1} divided by ${n2}?`,
+                correct: (ans) => `The answer is ${ans}`,
                 praise: ["Awesome!", "Stellar!", "Cosmic!", "Perfect!", "Nice work!"],
                 miss: "Miss!",
                 finalScore: "Final Score",
@@ -498,6 +499,7 @@
                 abort: "Mission abbrechen",
                 questionMul: (n1, n2) => `Wieviel ist ${n1} mal ${n2}?`,
                 questionDiv: (n1, n2) => `Wieviel ist ${n1} geteilt durch ${n2}?`,
+                correct: (ans) => `Die Antwort ist ${ans}`,
                 praise: ["Super!", "Klasse!", "Kosmisch!", "Perfekt!", "Gut gemacht!"],
                 miss: "Daneben!",
                 finalScore: "Endpunktzahl",
@@ -934,7 +936,8 @@
                 }
             } else {
                 setTimeout(() => {
-                    if(state.isPlaying) speak(speechQ);
+                    // Changed: Pass true to explicitly turn on mic after speaking
+                    if(state.isPlaying) speak(speechQ, true);
                 }, 400);
             }
         }
@@ -1207,7 +1210,8 @@
         }
 
         // --- Audio Utils ---
-        function speak(text) {
+        // Changed: Added autoListen parameter
+        function speak(text, autoListen = false) {
             if (synth.speaking) synth.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.rate = 1.0;
@@ -1229,7 +1233,8 @@
 
             synth.speak(utter);
             
-            if (text.includes(i18n[state.language].whatIs.split('...')[0]) && state.voiceSupported && !state.usingKeypad) {
+            // Fixed: Auto-listen logic relies on explicit flag now
+            if (autoListen && state.voiceSupported && !state.usingKeypad) {
                 utter.onend = () => { 
                     try { 
                         if(state.isPlaying && !state.isListening) recognition.start(); 
