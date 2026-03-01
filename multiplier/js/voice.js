@@ -340,7 +340,7 @@ const Voice = {
     }
   },
 
-  speakQuestion(num1, num2) {
+  speakQuestion(num1, num2, callback) {
     const lang = Storage.getLanguage();
     let question;
     
@@ -350,7 +350,7 @@ const Voice = {
       question = `What is ${num1} times ${num2}?`;
     }
     
-    this.speak(question);
+    this.speak(question, callback);
   },
 
   speakCorrect() {

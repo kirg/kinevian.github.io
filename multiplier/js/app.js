@@ -272,11 +272,9 @@ const App = {
     this.elements.streakCount.textContent = progress.streak;
 
     if (!this.isMuted) {
-      Voice.speakQuestion(question.num1, question.num2);
-      
-      setTimeout(() => {
+      Voice.speakQuestion(question.num1, question.num2, () => {
         this.startListening();
-      }, 1500);
+      });
     } else {
       this.elements.keypad.classList.remove('hidden');
       this.elements.micBtn.classList.remove('hidden');
@@ -443,10 +441,14 @@ const App = {
       this.elements.feedbackText.className = 'feedback-text incorrect';
 
       if (result.hearts <= 0) {
-        this.elements.continueBtn.classList.add('hidden');
         setTimeout(() => this.showGameOver(), 1500);
       } else {
-        this.elements.continueBtn.classList.remove('hidden');
+        setTimeout(() => {
+          this.nextQuestion();
+        }, 2000);
+      }
+    }
+  },
       }
     }
   },
