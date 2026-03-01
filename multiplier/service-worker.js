@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multiplier-hero-v1';
+const CACHE_NAME = 'multiplier-hero-v2';
 const ASSETS_TO_CACHE = [
   '/multiplier/',
   '/multiplier/index.html',
@@ -13,25 +13,36 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Caching app assets');
         return cache.addAll(ASSETS_TO_CACHE);
       })
-      .then(() => self.skipWaiting())
+      .then(() => {
+        console.log('Skip waiting...');
+        return self.skipWaiting();
+      })
   );
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log('Deleting old cache:', name);
+            return caches.delete(name);
+          })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      console.log('Claiming clients...');
+      return self.clients.claim();
+    })
   );
 });
 
