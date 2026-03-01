@@ -149,13 +149,14 @@ const Game = {
   },
 
   getProgress() {
+    const storageProgress = Storage.getProgress();
     return {
       questionNumber: this.questionNumber,
       maxQuestions: this.maxQuestions,
       correctInRow: this.correctInRow,
-      hearts: Storage.getProgress().hearts,
-      stars: Storage.getProgress().stars,
-      streak: Storage.getProgress().streak
+      hearts: storageProgress.hearts,
+      animals: storageProgress.animals,
+      streak: storageProgress.streak
     };
   },
 

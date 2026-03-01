@@ -178,7 +178,7 @@ const App = {
     const grid = this.elements.numbersGrid;
     grid.innerHTML = '';
     const mastered = Game.getMasteredNumbers();
-    const animals = ['🐶', '🐱', '🐼', '🦁', '🐯', '🦒', '🐘', '🦓', '🦒', '🐵', '🐸', '🐙'];
+    const animals = ['🐶', '🐱', '🐼', '🦁', '🐯', '🦒', '🐘', '🦓', '🐵', '🐸', '🐙', '🦋'];
 
     for (let i = 1; i <= 12; i++) {
       const btn = document.createElement('button');
@@ -278,7 +278,7 @@ const App = {
     this.elements.continueBtn.classList.add('hidden');
     this.elements.mascot.className = 'mascot thinking';
     
-    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦒', '🐶', '🐱'];
+    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦋', '🐶', '🐱'];
     this.elements.mascot.textContent = animals[Math.floor(Math.random() * animals.length)];
 
     const question = Game.generateQuestion();
@@ -436,7 +436,7 @@ const App = {
     } else {
       this.elements.feedbackText.textContent = '✓ Correct!';
       this.elements.feedbackText.className = 'feedback-text correct';
-      const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦒', '🐶', '🐱'];
+    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦋', '🐶', '🐱'];
       this.elements.mascot.textContent = animals[Math.floor(Math.random() * animals.length)];
     }
 
@@ -488,7 +488,7 @@ const App = {
     container.className = 'confetti';
     document.body.appendChild(container);
 
-    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦒', '🐶', '🐱'];
+    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦋', '🐶', '🐱'];
 
     for (let i = 0; i < 20; i++) {
       const piece = document.createElement('div');
