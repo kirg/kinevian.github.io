@@ -1,3 +1,120 @@
+const Sound = {
+  audioContext: null,
+
+  init() {
+    if ('AudioContext' in window || 'webkitAudioContext' in window) {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  },
+
+  playCorrect() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    
+    const osc1 = this.audioContext.createOscillator();
+    const osc2 = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    osc1.type = 'sine';
+    osc2.type = 'sine';
+    
+    osc1.frequency.setValueAtTime(523.25, now);
+    osc1.frequency.setValueAtTime(659.25, now + 0.1);
+    osc1.frequency.setValueAtTime(783.99, now + 0.2);
+    
+    osc2.frequency.setValueAtTime(523.25 * 2, now);
+    osc2.frequency.setValueAtTime(659.25 * 2, now + 0.1);
+    osc2.frequency.setValueAtTime(783.99 * 2, now + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.4);
+    osc2.stop(now + 0.4);
+  },
+
+  playIncorrect() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    
+    const osc = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    osc.type = 'sine';
+    
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.setValueAtTime(150, now + 0.15);
+    osc.frequency.setValueAtTime(100, now + 0.3);
+    
+    gainNode.gain.setValueAtTime(0.3, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    
+    osc.start(now);
+    osc.stop(now + 0.4);
+  },
+
+  playMastered() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    
+    notes.forEach((freq, i) => {
+      const osc = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+      
+      osc.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.1);
+      
+      gainNode.gain.setValueAtTime(0.25, now + i * 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+      
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.3);
+    });
+  },
+
+  playClick() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    
+    const osc = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+};
+
 const Voice = {
   synth: null,
   recognition: null,

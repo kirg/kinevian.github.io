@@ -4,6 +4,7 @@ const App = {
   isMuted: false,
   isListening: false,
   voiceSupported: false,
+  attemptsLeft: 0,
 
   elements: {},
 
@@ -11,6 +12,7 @@ const App = {
     this.cacheElements();
     this.loadSettings();
     this.initVoice();
+    Sound.init();
     this.initGame();
     this.bindEvents();
     this.showScreen('home');
@@ -251,6 +253,7 @@ const App = {
     }
 
     this.currentAnswer = '';
+    this.attemptsLeft = 1;
     this.elements.answerDisplay.textContent = '';
     this.elements.answerDisplay.className = 'answer-display';
     this.elements.feedbackText.textContent = '';
@@ -304,12 +307,12 @@ const App = {
       this.submitAnswer(number);
     } else {
       console.log('Could not understand:', alternatives);
-      if (!this.isMuted) {
-        Voice.speakIncorrect();
-      }
+      Sound.playIncorrect();
       this.isListening = false;
       this.elements.micBtn.classList.remove('listening');
       this.elements.micBtn.innerHTML = '<span class="mic-icon">🎤</span> Tap to speak';
+      this.elements.feedbackText.textContent = 'Didn\'t catch that, try again!';
+      this.elements.feedbackText.className = 'feedback-text incorrect';
     }
   },
 
@@ -391,50 +394,57 @@ const App = {
     this.elements.heartsCount.textContent = result.hearts;
     this.elements.streakCount.textContent = progress.streak;
 
+    Sound.playCorrect();
+
     if (result.mastered) {
       this.elements.feedbackText.textContent = '🎉 Mastered!';
       this.elements.feedbackText.className = 'feedback-text correct';
       this.renderNumbersGrid();
-      if (!this.isMuted) {
-        Voice.speakMastered();
-      }
+      Sound.playMastered();
     } else if (result.streak >= 3) {
       this.elements.feedbackText.textContent = `🔥 On fire! ${result.streak} in a row!`;
       this.elements.feedbackText.className = 'feedback-text correct';
-      if (!this.isMuted) {
-        Voice.speakStreak();
-      }
     } else {
-      const lang = Storage.getLanguage();
-      const messages = Voice.messages[lang].correct;
-      this.elements.feedbackText.textContent = messages[Math.floor(Math.random() * messages.length)];
+      this.elements.feedbackText.textContent = '✓ Correct!';
       this.elements.feedbackText.className = 'feedback-text correct';
-      if (!this.isMuted) {
-        Voice.speakAnswer(result.correctAnswer);
-        setTimeout(() => Voice.speakCorrect(), 500);
-      }
     }
 
     this.showConfetti();
-    this.elements.continueBtn.classList.remove('hidden');
+
+    setTimeout(() => {
+      this.nextQuestion();
+    }, 1000);
   },
 
   handleIncorrectAnswer(result) {
     this.elements.answerDisplay.className = 'answer-display incorrect';
     this.elements.mascot.className = 'mascot';
     
-    this.elements.feedbackText.textContent = `The answer was ${result.correctAnswer}`;
-    this.elements.feedbackText.className = 'feedback-text incorrect';
+    Sound.playIncorrect();
 
-    if (!this.isMuted) {
-      Voice.speakIncorrect();
-    }
-
-    if (result.hearts <= 0) {
+    if (this.attemptsLeft > 0) {
+      this.attemptsLeft--;
+      this.elements.feedbackText.textContent = 'Try again!';
+      this.elements.feedbackText.className = 'feedback-text incorrect';
+      this.currentAnswer = '';
+      this.elements.answerDisplay.textContent = '';
       this.elements.continueBtn.classList.add('hidden');
-      setTimeout(() => this.showGameOver(), 1500);
+      
+      if (!this.isMuted && !this.isListening) {
+        setTimeout(() => {
+          this.startListening();
+        }, 800);
+      }
     } else {
-      this.elements.continueBtn.classList.remove('hidden');
+      this.elements.feedbackText.textContent = `The answer was ${result.correctAnswer}`;
+      this.elements.feedbackText.className = 'feedback-text incorrect';
+
+      if (result.hearts <= 0) {
+        this.elements.continueBtn.classList.add('hidden');
+        setTimeout(() => this.showGameOver(), 1500);
+      } else {
+        this.elements.continueBtn.classList.remove('hidden');
+      }
     }
   },
 
