@@ -92,7 +92,34 @@ const Sound = {
     });
   },
 
-  playClick() {
+  playMicOn() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+
+    const now = this.audioContext.currentTime;
+    
+    const osc = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.setValueAtTime(800, now + 0.08);
+    
+    gainNode.gain.setValueAtTime(0.2, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    
+    osc.start(now);
+    osc.stop(now + 0.15);
+  },
+
+  playMicOff() {
     if (!this.audioContext) this.init();
     if (!this.audioContext) return;
 
@@ -106,12 +133,13 @@ const Sound = {
     
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800, now);
+    osc.frequency.setValueAtTime(600, now + 0.08);
     
-    gainNode.gain.setValueAtTime(0.1, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    gainNode.gain.setValueAtTime(0.2, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
     
     osc.start(now);
-    osc.stop(now + 0.05);
+    osc.stop(now + 0.15);
   }
 };
 
@@ -286,10 +314,13 @@ const Voice = {
     utterance.lang = this.lang;
     utterance.rate = 0.85;
     utterance.pitch = 1.1;
+    utterance.volume = 1;
 
-    const voice = this.voices.find(v => v.lang.startsWith(this.lang.split('-')[0]));
-    if (voice) {
-      utterance.voice = voice;
+    if (this.voices.length > 0) {
+      const voice = this.voices.find(v => v.lang.startsWith(this.lang.split('-')[0]));
+      if (voice) {
+        utterance.voice = voice;
+      }
     }
 
     utterance.onend = () => {
@@ -301,7 +332,12 @@ const Voice = {
       if (callback) callback();
     };
 
-    this.synth.speak(utterance);
+    try {
+      this.synth.speak(utterance);
+    } catch (e) {
+      console.log('Speech speak error:', e);
+      if (callback) callback();
+    }
   },
 
   speakQuestion(num1, num2) {

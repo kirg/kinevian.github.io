@@ -294,6 +294,7 @@ const App = {
     this.isListening = true;
     this.elements.micBtn.classList.add('listening');
     this.elements.micBtn.innerHTML = '<span class="mic-icon">🎤</span> Listening...';
+    Sound.playMicOn();
 
     Voice.startListening(
       (number, alternatives) => this.handleVoiceResult(number, alternatives),
@@ -324,6 +325,7 @@ const App = {
 
   handleListeningError(error) {
     console.log('Listening error:', error);
+    Sound.playMicOff();
     this.isListening = false;
     this.elements.micBtn.classList.remove('listening');
     this.elements.micBtn.innerHTML = '<span class="mic-icon">🎤</span> Tap to speak';
@@ -332,6 +334,7 @@ const App = {
   toggleMic() {
     if (this.isListening) {
       Voice.stopListening();
+      Sound.playMicOff();
       this.handleListeningEnd();
     } else {
       this.startListening();

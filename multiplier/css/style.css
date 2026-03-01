@@ -20,6 +20,12 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -63,30 +69,33 @@ body::before {
 .app-container {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 10px 16px;
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.4rem;
+  gap: 8px;
+  font-size: 1.2rem;
   font-weight: 800;
 }
 
 .logo-icon {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -155,8 +164,9 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  padding-bottom: 100px;
+  padding: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .screen {
@@ -178,16 +188,17 @@ body::before {
 }
 
 .screen-title {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   text-align: center;
 }
 
 .screen-subtitle {
   color: var(--text-muted);
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   text-align: center;
+  font-size: 0.9rem;
 }
 
 .stars-display {
@@ -213,16 +224,16 @@ body::before {
 .numbers-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 8px;
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .number-btn {
   aspect-ratio: 1;
   border: none;
-  border-radius: 16px;
-  font-size: 1.5rem;
+  border-radius: 12px;
+  font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -274,17 +285,17 @@ body::before {
 
 .action-btns {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
 .btn {
   flex: 1;
-  padding: 16px 24px;
+  padding: 12px 16px;
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
   font-family: inherit;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -322,40 +333,41 @@ body::before {
 
 .progress-bar {
   width: 100%;
-  height: 12px;
+  height: 8px;
   background: var(--card-bg);
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
-  border-radius: 6px;
+  border-radius: 4px;
   transition: width 0.5s ease;
 }
 
 .stats-row {
   display: flex;
   justify-content: center;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 20px;
+  margin-bottom: 12px;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .stat-icon {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .stat-value {
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .hearts {
@@ -369,16 +381,16 @@ body::before {
 .question-display {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 24px;
-  padding: 40px;
+  border-radius: 20px;
+  padding: 20px;
   width: 100%;
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .mascot {
-  font-size: 4rem;
-  margin-bottom: 16px;
+  font-size: 2.5rem;
+  margin-bottom: 8px;
   animation: bounce 1s ease-in-out infinite;
 }
 
@@ -410,14 +422,14 @@ body::before {
 }
 
 .question-text {
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .question-hint {
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .input-area {
@@ -427,13 +439,13 @@ body::before {
 .answer-display {
   background: var(--card-bg);
   border: 2px solid var(--card-border);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 12px;
   text-align: center;
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  margin-bottom: 20px;
-  min-height: 80px;
+  margin-bottom: 12px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -467,21 +479,22 @@ body::before {
 .keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 6px;
 }
 
 .key-btn {
-  aspect-ratio: 1.2;
+  aspect-ratio: 1;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
   background: var(--card-bg);
   color: var(--text-light);
   border: 1px solid var(--card-border);
+  padding: 8px;
 }
 
 .key-btn:hover {
@@ -507,12 +520,12 @@ body::before {
 
 .mic-btn {
   width: 100%;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -540,10 +553,10 @@ body::before {
 
 .feedback-text {
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 16px;
-  min-height: 30px;
+  margin-bottom: 8px;
+  min-height: 24px;
 }
 
 .feedback-text.correct {
@@ -611,11 +624,12 @@ body::before {
   right: 0;
   display: flex;
   justify-content: space-around;
-  padding: 12px 20px;
+  padding: 8px 16px;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--card-border);
   z-index: 100;
+  flex-shrink: 0;
 }
 
 .nav-btn {
