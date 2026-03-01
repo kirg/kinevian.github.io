@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="A fun space-themed multiplication learning app for kids with voice input">
+  <meta name="theme-color" content="#6B46C1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Multiplication Hero - Star Math</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⭐</text></svg>">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">⭐</span>
+        <span>Star Math</span>
+      </div>
+      <div class="header-controls">
+        <div class="lang-toggle" id="lang-toggle">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="de">DE</button>
+        </div>
+        <button class="icon-btn" id="mute-btn" title="Toggle sound">🔊</button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div id="home-screen" class="screen active">
+        <h1 class="screen-title">Choose Numbers to Practice</h1>
+        <p class="screen-subtitle">Select the multiplication tables you want to learn</p>
+
+        <div class="stars-display">
+          <span class="stars-icon">⭐</span>
+          <span class="stars-count" id="stars-count">0</span>
+          <span>stars</span>
+        </div>
+
+        <div class="numbers-grid" id="numbers-grid"></div>
+
+        <div class="action-btns">
+          <button class="btn btn-secondary" id="select-all-btn">Select All</button>
+          <button class="btn btn-secondary" id="clear-all-btn">Clear</button>
+        </div>
+
+        <div class="voice-warning hidden" id="voice-warning">
+          🎤 Voice input not supported in this browser. Use the keyboard to answer!
+        </div>
+
+        <button class="btn btn-primary" id="start-btn" style="margin-top: 20px; width: 100%;">
+          Start Practice 🚀
+        </button>
+      </div>
+
+      <div id="game-screen" class="screen">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-item hearts">
+            <span class="stat-icon">❤️</span>
+            <span class="stat-value" id="hearts-count">3</span>
+          </div>
+          <div class="stat-item streak">
+            <span class="stat-icon">🔥</span>
+            <span class="stat-value" id="streak-count">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">⭐</span>
+            <span class="stat-value" id="stars-count-game">0</span>
+          </div>
+        </div>
+
+        <div class="question-display">
+          <div class="mascot" id="mascot">⭐</div>
+          <div class="question-text" id="question-text">7 × 8 = ?</div>
+          <div class="question-hint">Speak your answer or use the keyboard</div>
+        </div>
+
+        <div class="input-area">
+          <button class="mic-btn" id="mic-btn">
+            <span class="mic-icon">🎤</span>
+            Tap to speak
+          </button>
+
+          <div class="answer-display" id="answer-display"></div>
+
+          <div class="keypad hidden" id="keypad">
+            <button class="key-btn" data-value="1">1</button>
+            <button class="key-btn" data-value="2">2</button>
+            <button class="key-btn" data-value="3">3</button>
+            <button class="key-btn" data-value="4">4</button>
+            <button class="key-btn" data-value="5">5</button>
+            <button class="key-btn" data-value="6">6</button>
+            <button class="key-btn" data-value="7">7</button>
+            <button class="key-btn" data-value="8">8</button>
+            <button class="key-btn" data-value="9">9</button>
+            <button class="key-btn action clear" data-action="clear">C</button>
+            <button class="key-btn" data-value="0">0</button>
+            <button class="key-btn action submit" data-action="submit">✓</button>
+          </div>
+
+          <div class="feedback-text" id="feedback-text"></div>
+
+          <button class="btn btn-primary hidden" id="continue-btn" style="width: 100%; margin-top: 16px;">
+            Continue →
+          </button>
+        </div>
+      </div>
+
+      <div id="profile-screen" class="screen">
+        <h1 class="screen-title">Your Progress</h1>
+        <p class="screen-subtitle">Keep practicing to earn more stars!</p>
+
+        <div class="profile-stats">
+          <div class="profile-stat-card">
+            <div class="profile-stat-title">⭐ Total Stars</div>
+            <div class="profile-stat-value" id="profile-stars">0</div>
+          </div>
+
+          <div class="profile-stat-card">
+            <div class="profile-stat-title">🔥 Day Streak</div>
+            <div class="profile-stat-value" id="profile-streak">0</div>
+          </div>
+
+          <div class="profile-stat-card">
+            <div class="profile-stat-title">🏆 Numbers Mastered</div>
+            <div class="profile-stat-value" id="profile-mastered">0</div>
+            <div class="mastered-grid" id="mastered-numbers"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="game-over-screen" class="screen hidden">
+        <div class="game-over">
+          <div class="game-over-icon">🌟</div>
+          <h2 class="game-over-title">Great Practice!</h2>
+          <p class="game-over-stars">You earned <span id="final-stars">0</span> stars!</p>
+          <div class="game-over-stats">Come back tomorrow to keep your streak!</div>
+          
+          <div class="action-btns" style="margin-top: 24px;">
+            <button class="btn btn-secondary" id="home-btn">Home</button>
+            <button class="btn btn-primary" id="play-again-btn">Play Again</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <nav class="nav-bar">
+      <button class="nav-btn active" id="nav-home">
+        <span class="nav-btn-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" id="nav-play">
+        <span class="nav-btn-icon">🎮</span>
+        <span>Play</span>
+      </button>
+      <button class="nav-btn" id="nav-profile">
+        <span class="nav-btn-icon">👤</span>
+        <span>Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
