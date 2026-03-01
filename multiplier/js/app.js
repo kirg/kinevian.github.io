@@ -54,9 +54,8 @@ const App = {
       profileMastered: document.getElementById('profile-mastered'),
       masteredNumbers: document.getElementById('mastered-numbers'),
       voiceWarning: document.getElementById('voice-warning'),
-      navHome: document.getElementById('nav-home'),
-      navPlay: document.getElementById('nav-play'),
-      navProfile: document.getElementById('nav-profile')
+      headerHomeBtn: document.getElementById('home-btn'),
+      viewProfileBtn: document.getElementById('view-profile-btn')
     };
   },
 
@@ -87,6 +86,16 @@ const App = {
     });
 
     this.elements.startBtn.addEventListener('click', () => this.startGame());
+
+    this.elements.viewProfileBtn.addEventListener('click', () => {
+      this.showScreen('profile');
+      this.updateProfile();
+    });
+
+    this.elements.headerHomeBtn.addEventListener('click', () => {
+      this.showScreen('home');
+      this.elements.headerHomeBtn.style.display = 'none';
+    });
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.addEventListener('click', (e) => this.changeLanguage(e.target.dataset.lang));
@@ -152,6 +161,12 @@ const App = {
     this.elements.screens.forEach(s => s.classList.remove('active'));
     document.getElementById(`${screen}-screen`).classList.add('active');
     this.currentScreen = screen;
+    
+    if (screen === 'game' || screen === 'profile') {
+      this.elements.headerHomeBtn.style.display = 'flex';
+    } else {
+      this.elements.headerHomeBtn.style.display = 'none';
+    }
   },
 
   updateNav(screen) {

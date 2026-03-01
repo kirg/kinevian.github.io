@@ -21,6 +21,7 @@
         <span>Star Math</span>
       </div>
       <div class="header-controls">
+        <button class="icon-btn" id="home-btn" title="Home" style="display: none;">🏠</button>
         <div class="lang-toggle" id="lang-toggle">
           <button class="lang-btn active" data-lang="en">EN</button>
           <button class="lang-btn" data-lang="de">DE</button>
@@ -51,8 +52,12 @@
           🎤 Voice input not supported in this browser. Use the keyboard to answer!
         </div>
 
-        <button class="btn btn-primary" id="start-btn" style="margin-top: 20px; width: 100%;">
+        <button class="btn btn-primary" id="start-btn" style="margin-top: 12px; width: 100%;">
           Start Practice 🚀
+        </button>
+
+        <button class="btn btn-secondary" id="view-profile-btn" style="margin-top: 8px; width: 100%;">
+          View Progress 📊
         </button>
       </div>
 
@@ -150,21 +155,6 @@
         </div>
       </div>
     </main>
-
-    <nav class="nav-bar">
-      <button class="nav-btn active" id="nav-home">
-        <span class="nav-btn-icon">🏠</span>
-        <span>Home</span>
-      </button>
-      <button class="nav-btn" id="nav-play">
-        <span class="nav-btn-icon">🎮</span>
-        <span>Play</span>
-      </button>
-      <button class="nav-btn" id="nav-profile">
-        <span class="nav-btn-icon">👤</span>
-        <span>Profile</span>
-      </button>
-    </nav>
   </div>
 
   <script src="js/storage.js"></script>

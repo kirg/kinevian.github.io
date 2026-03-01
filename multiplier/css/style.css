@@ -167,6 +167,7 @@ body::before {
   padding: 12px;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-bottom: 12px;
 }
 
 .screen {
@@ -381,16 +382,16 @@ body::before {
 .question-display {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 12px;
   width: 100%;
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .mascot {
-  font-size: 2.5rem;
-  margin-bottom: 8px;
+  font-size: 2rem;
+  margin-bottom: 4px;
   animation: bounce 1s ease-in-out infinite;
 }
 
@@ -422,14 +423,14 @@ body::before {
 }
 
 .question-text {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   font-weight: 800;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .question-hint {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .input-area {
@@ -440,12 +441,12 @@ body::before {
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   border-radius: 12px;
-  padding: 12px;
+  padding: 8px;
   text-align: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
-  margin-bottom: 12px;
-  min-height: 60px;
+  margin-bottom: 8px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -479,22 +480,22 @@ body::before {
 .keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 4px;
 }
 
 .key-btn {
   aspect-ratio: 1;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-family: inherit;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
   background: var(--card-bg);
   color: var(--text-light);
   border: 1px solid var(--card-border);
-  padding: 8px;
+  padding: 4px;
 }
 
 .key-btn:hover {
@@ -520,12 +521,12 @@ body::before {
 
 .mic-btn {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
+  padding: 10px;
+  margin-bottom: 6px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -553,10 +554,10 @@ body::before {
 
 .feedback-text {
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  margin-bottom: 8px;
-  min-height: 24px;
+  margin-bottom: 4px;
+  min-height: 20px;
 }
 
 .feedback-text.correct {
@@ -618,18 +619,7 @@ body::before {
 }
 
 .nav-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--card-border);
-  z-index: 100;
-  flex-shrink: 0;
+  display: none;
 }
 
 .nav-btn {
