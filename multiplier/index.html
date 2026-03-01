@@ -4,21 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="description" content="A fun space-themed multiplication learning app for kids with voice input">
-  <meta name="theme-color" content="#6B46C1">
+  <meta name="theme-color" content="#2d5a3d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Multiplication Hero - Star Math</title>
+  <title>Math Zoo - Learn Multiplication</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⭐</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦁</text></svg>">
   <link rel="apple-touch-icon" href="icons/icon-192.svg">
 </head>
 <body>
   <div class="app-container">
     <header class="header">
       <div class="logo">
-        <span class="logo-icon">⭐</span>
-        <span>Star Math</span>
+        <span class="logo-icon">🦁</span>
+        <span>Math Zoo</span>
       </div>
       <div class="header-controls">
         <button class="icon-btn" id="home-btn" title="Home" style="display: none;">🏠</button>
@@ -33,12 +33,12 @@
     <main class="main-content">
       <div id="home-screen" class="screen active">
         <h1 class="screen-title">Choose Numbers to Practice</h1>
-        <p class="screen-subtitle">Select the multiplication tables you want to learn</p>
+        <p class="screen-subtitle">Master numbers to collect animals!</p>
 
         <div class="stars-display">
-          <span class="stars-icon">⭐</span>
+          <span class="stars-icon">🦁</span>
           <span class="stars-count" id="stars-count">0</span>
-          <span>stars</span>
+          <span>animals</span>
         </div>
 
         <div class="numbers-grid" id="numbers-grid"></div>
@@ -76,13 +76,13 @@
             <span class="stat-value" id="streak-count">0</span>
           </div>
           <div class="stat-item">
-            <span class="stat-icon">⭐</span>
+            <span class="stat-icon">🦁</span>
             <span class="stat-value" id="stars-count-game">0</span>
           </div>
         </div>
 
         <div class="question-display">
-          <div class="mascot" id="mascot">⭐</div>
+          <div class="mascot" id="mascot">🦁</div>
           <div class="question-text" id="question-text">7 × 8 = ?</div>
           <div class="question-hint">Speak your answer or use the keyboard</div>
         </div>
@@ -119,13 +119,14 @@
       </div>
 
       <div id="profile-screen" class="screen">
-        <h1 class="screen-title">Your Progress</h1>
-        <p class="screen-subtitle">Keep practicing to earn more stars!</p>
+        <h1 class="screen-title">Your Zoo</h1>
+        <p class="screen-subtitle">Master numbers to collect animals!</p>
 
         <div class="profile-stats">
           <div class="profile-stat-card">
-            <div class="profile-stat-title">⭐ Total Stars</div>
+            <div class="profile-stat-title">🦁 Animals Collected</div>
             <div class="profile-stat-value" id="profile-stars">0</div>
+            <div class="mastered-grid" id="mastered-numbers"></div>
           </div>
 
           <div class="profile-stat-card">
@@ -136,16 +137,15 @@
           <div class="profile-stat-card">
             <div class="profile-stat-title">🏆 Numbers Mastered</div>
             <div class="profile-stat-value" id="profile-mastered">0</div>
-            <div class="mastered-grid" id="mastered-numbers"></div>
           </div>
         </div>
       </div>
 
       <div id="game-over-screen" class="screen hidden">
         <div class="game-over">
-          <div class="game-over-icon">🌟</div>
+          <div class="game-over-icon">🦁</div>
           <h2 class="game-over-title">Great Practice!</h2>
-          <p class="game-over-stars">You earned <span id="final-stars">0</span> stars!</p>
+          <p class="game-over-stars">You collected <span id="final-stars">0</span> animals!</p>
           <div class="game-over-stats">Come back tomorrow to keep your streak!</div>
           
           <div class="action-btns" style="margin-top: 24px;">

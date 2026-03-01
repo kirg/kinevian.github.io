@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
-  --bg-dark: #1a1a2e;
-  --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  --primary: #6B46C1;
-  --primary-light: #805AD5;
-  --secondary: #F6AD55;
-  --accent-cyan: #00D9FF;
-  --accent-magenta: #FF006E;
+  --bg-dark: #1a472a;
+  --bg-gradient: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1e3d2f 100%);
+  --primary: #2d5a3d;
+  --primary-light: #4a7c59;
+  --secondary: #f4a460;
+  --accent-cyan: #87ceeb;
+  --accent-magenta: #ff6b6b;
   --correct: #48BB78;
-  --incorrect: #F6AD55;
+  --incorrect: #f4a460;
   --text-light: #FFFFFF;
-  --text-muted: #A0AEC0;
+  --text-muted: #a8d5a2;
   --card-bg: rgba(255, 255, 255, 0.08);
   --card-border: rgba(255, 255, 255, 0.12);
 }
@@ -272,8 +272,9 @@ body::before {
 }
 
 .number-btn.mastered {
-  border-color: #FFD700;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  border-color: #f4a460;
+  box-shadow: 0 0 15px rgba(244, 164, 96, 0.4);
+  font-size: 1.8rem;
 }
 
 .number-btn:hover {
@@ -679,15 +680,14 @@ body::before {
 }
 
 .mastered-num {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #1a1a2e;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4a7c59, #2d5a3d);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-size: 1.5rem;
 }
 
 .empty-state {

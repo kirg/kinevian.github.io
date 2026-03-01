@@ -1,12 +1,12 @@
 {
-  "name": "Multiplication Hero",
-  "short_name": "Star Math",
-  "description": "A fun space-themed multiplication learning app for kids",
+  "name": "Math Zoo",
+  "short_name": "Math Zoo",
+  "description": "A fun zoo-themed multiplication learning app for kids",
   "start_url": "/multiplier/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1a1a2e",
-  "theme_color": "#6B46C1",
+  "background_color": "#1a472a",
+  "theme_color": "#2d5a3d",
   "lang": "en",
   "icons": [
     {

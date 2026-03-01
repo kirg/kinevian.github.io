@@ -1,5 +1,10 @@
 const Storage = {
-  STORAGE_KEY: 'multiplier-hero',
+  STORAGE_KEY: 'math-zoo',
+
+  ANIMALS: [
+    '🐶', '🐱', '🐼', '🦁', '🐯', '🦒', '🐘', '🦓',
+    '🦒', '🐵', '🐸', '🐙'
+  ],
 
   getData() {
     const data = localStorage.getItem(this.STORAGE_KEY);
@@ -18,7 +23,7 @@ const Storage = {
       },
       progress: {
         numbers: {},
-        stars: 0,
+        animals: [],
         streak: 0,
         hearts: 3,
         lastPlayed: null,
@@ -83,7 +88,8 @@ const Storage = {
         correct: 0,
         incorrect: 0,
         mastered: false,
-        streak: 0
+        streak: 0,
+        animal: this.ANIMALS[num - 1] || '🐾'
       };
     }
     return progress.numbers[num];
@@ -92,15 +98,19 @@ const Storage = {
   recordAnswer(num, correct) {
     const data = this.getData();
     const numProgress = this.getNumberProgress(num);
+    let animalUnlocked = false;
 
     if (correct) {
       numProgress.correct++;
       numProgress.streak++;
       data.progress.totalCorrect++;
-      data.progress.stars += 1;
 
       if (numProgress.streak >= 8 && !numProgress.mastered) {
         numProgress.mastered = true;
+        if (!data.progress.animals.includes(numProgress.animal)) {
+          data.progress.animals.push(numProgress.animal);
+          animalUnlocked = true;
+        }
       }
     } else {
       numProgress.incorrect++;
@@ -114,8 +124,10 @@ const Storage = {
 
     return {
       mastered: numProgress.mastered,
+      animalUnlocked: animalUnlocked,
+      animal: numProgress.animal,
       hearts: data.progress.hearts,
-      stars: data.progress.stars
+      animals: data.progress.animals
     };
   },
 
@@ -165,12 +177,16 @@ const Storage = {
   getAllStats() {
     const progress = this.getProgress();
     return {
-      stars: progress.stars,
+      animals: progress.animals,
       streak: progress.streak,
       hearts: progress.hearts,
       totalCorrect: progress.totalCorrect,
       totalIncorrect: progress.totalIncorrect,
       masteredNumbers: this.getMasteredNumbers()
     };
+  },
+
+  getAnimalForNumber(num) {
+    return this.ANIMALS[num - 1] || '🐾';
   }
 };

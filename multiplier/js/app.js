@@ -178,19 +178,22 @@ const App = {
     const grid = this.elements.numbersGrid;
     grid.innerHTML = '';
     const mastered = Game.getMasteredNumbers();
+    const animals = ['🐶', '🐱', '🐼', '🦁', '🐯', '🦒', '🐘', '🦓', '🦒', '🐵', '🐸', '🐙'];
 
     for (let i = 1; i <= 12; i++) {
       const btn = document.createElement('button');
       btn.className = 'number-btn';
-      btn.textContent = i;
       btn.dataset.num = i;
+
+      if (mastered.includes(i)) {
+        btn.textContent = animals[i - 1];
+        btn.classList.add('mastered');
+      } else {
+        btn.textContent = i;
+      }
 
       if (Game.selectedNumbers.includes(i)) {
         btn.classList.add('selected');
-      }
-
-      if (mastered.includes(i)) {
-        btn.classList.add('mastered');
       }
 
       btn.addEventListener('click', () => {
@@ -243,7 +246,7 @@ const App = {
 
   updateStats() {
     const stats = Game.getAllStats();
-    this.elements.starsCount.textContent = stats.stars;
+    this.elements.starsCount.textContent = stats.animals ? stats.animals.length : 0;
     this.elements.heartsCount.textContent = stats.hearts;
     this.elements.streakCount.textContent = stats.streak;
   },
@@ -274,6 +277,9 @@ const App = {
     this.elements.feedbackText.textContent = '';
     this.elements.continueBtn.classList.add('hidden');
     this.elements.mascot.className = 'mascot thinking';
+    
+    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦒', '🐶', '🐱'];
+    this.elements.mascot.textContent = animals[Math.floor(Math.random() * animals.length)];
 
     const question = Game.generateQuestion();
     if (!question) return;
@@ -409,10 +415,17 @@ const App = {
     const progress = Game.getProgress();
     this.elements.heartsCount.textContent = result.hearts;
     this.elements.streakCount.textContent = progress.streak;
+    this.elements.starsCount.textContent = result.animals ? result.animals.length : 0;
 
     Sound.playCorrect();
 
-    if (result.mastered) {
+    if (result.animalUnlocked) {
+      this.elements.feedbackText.textContent = `🎉 New animal: ${result.animal}!`;
+      this.elements.feedbackText.className = 'feedback-text correct';
+      this.elements.mascot.textContent = result.animal;
+      this.renderNumbersGrid();
+      Sound.playMastered();
+    } else if (result.mastered) {
       this.elements.feedbackText.textContent = '🎉 Mastered!';
       this.elements.feedbackText.className = 'feedback-text correct';
       this.renderNumbersGrid();
@@ -423,6 +436,8 @@ const App = {
     } else {
       this.elements.feedbackText.textContent = '✓ Correct!';
       this.elements.feedbackText.className = 'feedback-text correct';
+      const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦒', '🐶', '🐱'];
+      this.elements.mascot.textContent = animals[Math.floor(Math.random() * animals.length)];
     }
 
     this.showConfetti();
@@ -473,15 +488,17 @@ const App = {
     container.className = 'confetti';
     document.body.appendChild(container);
 
-    const colors = ['#FFD700', '#FF006E', '#00D9FF', '#6B46C1', '#48BB78', '#F6AD55'];
+    const animals = ['🦁', '🐯', '🐘', '🦓', '🦒', '🐼', '🐵', '🐸', '🐙', '🦒', '🐶', '🐱'];
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 20; i++) {
       const piece = document.createElement('div');
       piece.className = 'confetti-piece';
       piece.style.left = Math.random() * 100 + '%';
-      piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.fontSize = (1 + Math.random() * 1) + 'rem';
       piece.style.animationDelay = Math.random() * 0.5 + 's';
       piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+      piece.style.backgroundColor = 'transparent';
+      piece.textContent = animals[Math.floor(Math.random() * animals.length)];
       container.appendChild(piece);
     }
 
@@ -491,7 +508,7 @@ const App = {
   showGameOver() {
     Game.endGame();
     const stats = Game.getAllStats();
-    this.elements.finalStars.textContent = stats.stars;
+    this.elements.finalStars.textContent = stats.animals ? stats.animals.length : 0;
     this.elements.gameOverScreen.classList.remove('hidden');
   },
 
@@ -501,20 +518,21 @@ const App = {
 
   updateProfile() {
     const stats = Game.getAllStats();
-    this.elements.profileStars.textContent = stats.stars;
+    this.elements.profileStars.textContent = stats.animals ? stats.animals.length : 0;
     this.elements.profileStreak.textContent = stats.streak;
     this.elements.profileMastered.textContent = stats.masteredNumbers.length;
 
     const masteredContainer = this.elements.masteredNumbers;
     masteredContainer.innerHTML = '';
 
-    if (stats.masteredNumbers.length === 0) {
-      masteredContainer.innerHTML = '<div class="empty-state">No numbers mastered yet. Keep practicing!</div>';
+    if (!stats.animals || stats.animals.length === 0) {
+      masteredContainer.innerHTML = '<div class="empty-state">No animals yet. Master a number to collect one!</div>';
     } else {
-      stats.masteredNumbers.forEach(num => {
+      stats.animals.forEach(animal => {
         const numEl = document.createElement('div');
         numEl.className = 'mastered-num';
-        numEl.textContent = num;
+        numEl.textContent = animal;
+        numEl.style.fontSize = '1.8rem';
         masteredContainer.appendChild(numEl);
       });
     }
