@@ -8,8 +8,17 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon-180x180.png" />
     <title>Kinevian Geo</title>
-    <script type="module" crossorigin src="./assets/index-C88AP8KG.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CPXxugDq.css">
+    <script>
+      // Apply the saved theme before first paint (no light/dark flash).
+      try {
+        var t = (JSON.parse(localStorage.getItem('kinevian-geo:v1')) || {}).settings;
+        t = (t && t.theme) || 'system';
+        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-CYqPNSxc.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BANK5wzw.css">
   <link rel="manifest" href="./manifest.webmanifest"></head>
   <body>
     <div id="root"></div>
