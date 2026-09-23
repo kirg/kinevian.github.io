@@ -2,25 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#2f6bff" />
-    <meta name="description" content="Learn world capitals (and soon flags, currencies and more) Duolingo-style, hands-free with your voice." />
-    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="apple-touch-icon-180x180.png" />
-    <title>geobingo</title>
+    <title>geobingo has moved</title>
+    <meta name="robots" content="noindex" />
+    <!-- The app moved to /geobingo/. Keep the #/... route when redirecting. -->
     <script>
-      // Apply the saved theme before first paint (no light/dark flash).
-      try {
-        var t = (JSON.parse(localStorage.getItem('kinevian-geo:v1')) || {}).settings;
-        t = (t && t.theme) || 'system';
-        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      } catch (e) {}
+      location.replace('../geobingo/' + location.hash);
     </script>
-    <script type="module" crossorigin src="./assets/index-BPhtdI7j.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-KG-c5D74.css">
-  <link rel="manifest" href="./manifest.webmanifest"></head>
+    <meta http-equiv="refresh" content="0; url=../geobingo/" />
+  </head>
   <body>
-    <div id="root"></div>
+    <p>geobingo has moved to <a href="../geobingo/">kinevian.com/geobingo</a>.</p>
   </body>
 </html>
