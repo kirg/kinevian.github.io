@@ -66,16 +66,16 @@ say "6/7 Keyless deploys from GitHub ($REPO only)"
 try gcloud iam workload-identity-pools create github --location=global --display-name="GitHub"
 # A brand-new pool can take a few seconds to be usable: retry creating the provider until it exists.
 for i in 1 2 3 4 5 6; do
-  if gcloud iam workload-identity-pools providers describe geo --location=global --workload-identity-pool=github >/dev/null 2>&1; then break; fi
+  if gcloud iam workload-identity-pools providers describe kirg-geo --location=global --workload-identity-pool=github >/dev/null 2>&1; then break; fi
   sleep 5
-  gcloud iam workload-identity-pools providers create-oidc geo --location=global --workload-identity-pool=github \
+  gcloud iam workload-identity-pools providers create-oidc kirg-geo --location=global --workload-identity-pool=github \
     --issuer-uri="https://token.actions.githubusercontent.com" \
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
     --attribute-condition="assertion.repository=='$REPO'" 2>&1 | grep -v -i 'already exists'
 done
 gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$REPO" >/dev/null
-if gcloud iam workload-identity-pools providers describe geo --location=global --workload-identity-pool=github >/dev/null 2>&1; then
+if gcloud iam workload-identity-pools providers describe kirg-geo --location=global --workload-identity-pool=github >/dev/null 2>&1; then
   echo "✅ GitHub login is ready"
 else
   echo "❌ The GitHub login provider still doesn't exist — send Claude the lines above this."
@@ -86,7 +86,7 @@ echo "------------------------------------------------------------"
 echo "project: $PROJECT_ID"
 echo "number: $PROJECT_NUMBER"
 echo "region: $REGION"
-echo "provider: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/geo"
+echo "provider: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/kirg-geo"
 echo "deployer: $DEPLOY_SA"
 echo "api: https://geobingo-api-$PROJECT_NUMBER.$REGION.run.app"
 echo "------------------------------------------------------------"
