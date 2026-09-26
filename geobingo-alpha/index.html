@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#2f6bff" />
+    <meta name="description" content="Learn the world's flags, capitals, locations and outlines — quizzes, time trials and matching games, hands-free with your voice." />
+    <!-- Link previews (WhatsApp, iMessage, Slack, …). Crawlers need absolute URLs. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="geobingo" />
+    <meta property="og:title" content="geobingo — flags, capitals and maps quiz" />
+    <meta property="og:description" content="Learn the world's flags, capitals, locations and outlines — quizzes, time trials and matching games, hands-free with your voice." />
+    <meta property="og:url" content="https://kinevian.com/geobingo/" />
+    <meta property="og:image" content="https://kinevian.com/geobingo/og-image-v2.png" />
+    <meta property="og:image:secure_url" content="https://kinevian.com/geobingo/og-image-v2.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="geobingo logo: a cartoon globe with an orbit ring" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://kinevian.com/geobingo/og-image-v2.png" />
+    <link rel="image_src" href="https://kinevian.com/geobingo/og-image-v2.png" />
+    <link rel="icon" href="alpha/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="alpha/pwa-64x64.png" type="image/png" sizes="64x64" />
+    <link rel="apple-touch-icon" href="alpha/apple-touch-icon-180x180.png" />
+    <title>geobingo</title>
+    <script>
+      // Apply the saved theme before first paint (no light/dark flash).
+      try {
+        var t = (JSON.parse(localStorage.getItem('kinevian-geo-alpha:v1')) || {}).settings;
+        t = (t && t.theme) || 'system';
+        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-D7CYZmcJ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B0Au6wrn.css">
+  <link rel="manifest" href="./manifest.webmanifest"></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
