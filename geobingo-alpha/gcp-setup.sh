@@ -64,12 +64,22 @@ done
 
 say "6/7 Keyless deploys from GitHub ($REPO only)"
 try gcloud iam workload-identity-pools create github --location=global --display-name="GitHub"
-try gcloud iam workload-identity-pools providers create-oidc geo --location=global --workload-identity-pool=github \
-  --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --attribute-condition="assertion.repository=='$REPO'"
+# A brand-new pool can take a few seconds to be usable: retry creating the provider until it exists.
+for i in 1 2 3 4 5 6; do
+  if gcloud iam workload-identity-pools providers describe geo --location=global --workload-identity-pool=github >/dev/null 2>&1; then break; fi
+  sleep 5
+  gcloud iam workload-identity-pools providers create-oidc geo --location=global --workload-identity-pool=github \
+    --issuer-uri="https://token.actions.githubusercontent.com" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+    --attribute-condition="assertion.repository=='$REPO'" 2>&1 | grep -v -i 'already exists'
+done
 gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$REPO" >/dev/null
+if gcloud iam workload-identity-pools providers describe geo --location=global --workload-identity-pool=github >/dev/null 2>&1; then
+  echo "✅ GitHub login is ready"
+else
+  echo "❌ The GitHub login provider still doesn't exist — send Claude the lines above this."
+fi
 
 say "7/7 Done! Copy everything between the lines and send it to Claude (nothing in it is secret)"
 echo "------------------------------------------------------------"
