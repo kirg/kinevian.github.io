@@ -27,16 +27,17 @@
     <script>
       // Apply the saved theme before first paint (no light/dark flash).
       try {
-        var t = (JSON.parse(localStorage.getItem('%VITE_STORAGE_KEY%')) || {}).settings;
+        var t = (JSON.parse(localStorage.getItem('geobingo:v2')) || {}).settings; // STORAGE_KEY in lib/store.ts
         t = (t && t.theme) || 'system';
         var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       } catch (e) {}
     </script>
-    <script type="module" crossorigin src="./assets/index-BhJ-lzjq.js"></script>
+    <style>.boot{background:#fff;place-content:center;justify-items:center;gap:18px;display:grid;position:fixed;inset:0}html[data-theme=dark] .boot{background:#131f24}.boot img:first-child{width:132px;height:132px}.boot img:last-child{width:min(72vw,300px);height:auto}</style>
+    <script type="module" crossorigin src="./assets/index-CKy3hM4A.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-B0xppzJQ.css">
   <link rel="manifest" href="./manifest.webmanifest"></head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot"><img src="favicon.svg" alt="" /><img src="wordmark.svg" alt="geobingo" /></div></div>
   </body>
 </html>
