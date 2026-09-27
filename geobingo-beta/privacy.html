@@ -14,20 +14,27 @@
 <h1>geobingo — privacy</h1>
 <p>geobingo is a geography game. You can play without an account; your progress then stays only on your device.</p>
 <h2>If you sign in (optional)</h2>
-<p>Signing in with Google lets your XP count on the leaderboards. We ask Google <strong>only</strong> for an
-anonymous ID that is unique to you in this app (OpenID Connect scope <code>openid</code>). We do
-<strong>not</strong> receive or store your email address, your Google name or your photo.</p>
-<p>We store: a scrambled (hashed) form of that anonymous ID, the display name you choose (shown publicly on the
+<p>Signing in with Google lets your XP count on the leaderboards. We ask Google for an ID that is unique to you in
+this app and for your <strong>email address</strong> (OpenID Connect scopes <code>openid email</code>). We do
+<strong>not</strong> receive or store your Google name or your photo.</p>
+<p>We store: a scrambled (hashed) form of that ID, your email address (private: never shown to other players or
+shared — it lets us reach you about your account), the display name you choose (shown publicly on the
 leaderboards), and the XP you earn while signed in. The data is kept in Google Cloud (Firestore, EU region).</p>
+<h2>Usage statistics</h2>
+<p>To see how geobingo is used, the app sends anonymous counts: a random device ID created by the app (not linked to
+you unless you're signed in), the app version, language, and events such as "a Flags quiz finished, 8 of 10
+right". No names, no location, no advertising or tracking by third parties.</p>
 <p>To delete your data, email <a href="mailto:rgkiran@gmail.com">rgkiran@gmail.com</a> with your display name.</p>
 <h2>Feedback</h2>
 <p>If you send feedback from the app (Settings → About), we store what you wrote together with the app version,
 language and device type (e.g. "iPhone, Safari") — nothing that identifies you. Please don't put personal details
 in the message.</p>
 <h2>Datenschutz (Deutsch)</h2>
-<p>Die Anmeldung ist freiwillig. Von Google erhalten wir nur eine anonyme ID (Scope <code>openid</code>) – keine
-E-Mail-Adresse, keinen Namen, kein Foto. Gespeichert werden eine verschlüsselte (gehashte) Form dieser ID, der von
-dir gewählte, öffentlich sichtbare Name und deine XP (Google Cloud, EU). Löschung auf Anfrage an
+<p>Die Anmeldung ist freiwillig. Von Google erhalten wir eine ID und deine E-Mail-Adresse (Scopes <code>openid
+email</code>) – keinen Namen, kein Foto. Gespeichert werden eine verschlüsselte (gehashte) Form dieser ID, deine
+E-Mail-Adresse (privat, nie für andere sichtbar), der von dir gewählte, öffentlich sichtbare Name und deine XP
+(Google Cloud, EU). Die App sendet außerdem anonyme Nutzungszahlen (zufällige Geräte-ID, Version, Sprache, z. B.
+„Flaggen-Quiz beendet, 8 von 10 richtig“). Löschung auf Anfrage an
 <a href="mailto:rgkiran@gmail.com">rgkiran@gmail.com</a>.</p>
 <p>Feedback aus der App (Einstellungen → Über) wird mit App-Version, Sprache und Gerätetyp gespeichert – ohne
 Angaben, die dich identifizieren.</p>
