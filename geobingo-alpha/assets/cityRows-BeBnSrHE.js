@@ -1,1 +1,0 @@
-import{J as e}from"./geo-Cw5rIqoR.js";function t(t,n,r){let i=e=>e.toLowerCase(),a=new Set(r.flatMap(t=>e(t)).map(i)),o={};for(let[,e,r,s,,,c=[]]of t)[e,r??e,...c].some(e=>a.has(i(e)))||(o[`${n}-${s}`]??=[]).push({en:e,...r?{de:r}:{},...c.length?{alt:c}:{}});return o}export{t};
