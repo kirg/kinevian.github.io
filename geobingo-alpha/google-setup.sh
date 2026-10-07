@@ -52,7 +52,20 @@ ok "Roles set"
 
 say "4/6 Linking GitHub to Cloud Build"
 CONN=geobingo-github
-gcloud builds connections describe "$CONN" --region="$REGION" >/dev/null 2>&1 || gcloud builds connections create github "$CONN" --region="$REGION"
+# Cloud Build keeps the GitHub login in Secret Manager: its own service agent needs to be allowed to (Google's docs).
+gcloud beta services identity create --service=cloudbuild.googleapis.com --project="$PROJECT_ID" >/dev/null 2>&1 || true
+gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None >/dev/null \
+  --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-cloudbuild.iam.gserviceaccount.com" --role=roles/secretmanager.admin
+if ! gcloud builds connections describe "$CONN" --region="$REGION" >/dev/null 2>&1; then
+  for i in 1 2 3; do
+    gcloud builds connections create github "$CONN" --region="$REGION" && break
+    echo "(Permissions can take a minute to apply — trying again in 30 s …)"; sleep 30
+  done
+fi
+if ! gcloud builds connections describe "$CONN" --region="$REGION" >/dev/null 2>&1; then
+  bad "Couldn't create the GitHub link — send Claude a screenshot of the error above. (Running this again is safe.)"
+  exit 1
+fi
 STAGE=$(gcloud builds connections describe "$CONN" --region="$REGION" --format='value(installationState.stage)')
 while [ "$STAGE" != "COMPLETE" ]; do
   echo
