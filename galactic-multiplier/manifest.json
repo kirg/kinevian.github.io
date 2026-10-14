@@ -1,21 +1,31 @@
 {
   "name": "Galactic Multiplier",
-  "short_name": "GalacticMultiplier",
+  "short_name": "Galactic",
+  "description": "Master multiplication and division in a fun, space-themed adventure!",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "./icon.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "./icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
