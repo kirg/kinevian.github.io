@@ -1037,6 +1037,7 @@
             document.getElementById('gameArea').classList.add('flex');
             if (!state.voiceSupported) { state.usingKeypad = true; openKeypad(); }
             else if (state.usingKeypad) { openKeypad(); }
+            else if (state.micState === 'blocked') { openKeypad(); } // permission already denied: don't make the player discover the keypad link first
 
             updateScore();
             nextQuestion();
