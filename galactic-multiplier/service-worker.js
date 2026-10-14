@@ -4,7 +4,7 @@
 // so installed users never received updates. Now: local assets only,
 // per-asset install, network-first for the page, cache-first for assets,
 // and old caches are deleted on activate.
-const CACHE_NAME = 'galactic-multiplier-v11';
+const CACHE_NAME = 'galactic-multiplier-v12';
 const ASSETS = [
   './',
   './index.html',

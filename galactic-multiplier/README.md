@@ -17,6 +17,10 @@ npx tailwindcss@3.4 -c tailwind.config.js -i input.css -o style.css --minify
 
 with the content glob pointing at this folder's `index.html`.
 
+## Microphone architecture
+
+All speech-recognition start/stop goes through one state machine in `index.html` (`micRequestStart` / `micRequestStop` / `renderMic`, states: off, starting, listening, stopping, blocked, unsupported). Do not call `recognition.start()`/`stop()` from anywhere else, and do not reintroduce boolean flags for mic state — the previous scattered approach desynced the UI from the real recognizer (dead taps, mics closing themselves, restart storms). Rules the controller enforces: bounded restarts per question (2) then it settles with a "tap the mic" hint; a manual tap-to-close mutes auto-listen for that question; after a permission denial auto-open stops until a manual tap retries; the mic pauses while TTS speaks so the game can't hear itself; interim results only display ("Heard: …"), final results submit.
+
 ## Platform notes
 
 - **iOS Safari has no SpeechRecognition** — the game detects this and uses the keypad as the primary input (mic button hidden). Keep that fallback intact.

@@ -226,6 +226,7 @@
                 <i class="fa-solid fa-microphone"></i>
             </button>
             <p id="micStatus" class="text-sm text-gray-400 animate-pulse">Tap to speak answer</p>
+            <p id="heardText" class="text-xs text-slate-400 h-4" aria-live="polite"></p>
 
             <!-- Keypad Toggle -->
             <button id="toggleKeypadBtn" class="text-sm text-blue-300 underline decoration-dotted mt-2">
@@ -444,6 +445,10 @@
                 newBadge: "New Badge Earned!",
                 voiceUnsupported: "Voice not supported here - use the keypad",
                 micDenied: "Mic blocked - use the keypad",
+                micStarting: "Starting mic\u2026",
+                micRetry: "Didn\u2019t catch that - tap the mic",
+                micNetwork: "Voice needs internet - use the keypad",
+                heard: "Heard: ",
                 iosHint: "To install: tap Share, then \u201cAdd to Home Screen\u201d",
                 newBadgeSpoken: (rank) => `Mission Complete! New Badge Earned: ${rank}!`,
                 completeSpoken: (rank) => `Mission Complete! You achieved the rank of ${rank}`
@@ -484,6 +489,10 @@
                 newBadge: "Neuer Rang erreicht!",
                 voiceUnsupported: "Sprache wird hier nicht unterst\u00fctzt - bitte Tastatur nutzen",
                 micDenied: "Mikrofon blockiert - bitte Tastatur nutzen",
+                micStarting: "Mikrofon startet\u2026",
+                micRetry: "Nicht verstanden - tippe aufs Mikrofon",
+                micNetwork: "Sprache braucht Internet - bitte Tastatur nutzen",
+                heard: "Geh\u00f6rt: ",
                 iosHint: "Installieren: Teilen tippen, dann \u201cZum Home-Bildschirm\u201d",
                 newBadgeSpoken: (rank) => `Mission erfüllt! Neuer Rang: ${rank}!`,
                 completeSpoken: (rank) => `Mission erfüllt! Du hast den Rang ${rank} erreicht`
@@ -546,7 +555,6 @@
             score: 0,
             streak: 0,
             currentQ: { displayN1: 0, displayN2: 0, ans: 0, speech: "", rawN1: 0, rawN2: 0 },
-            isListening: false,
             voiceSupported: false,
             keypadInput: "",
             usingKeypad: false,
@@ -563,13 +571,22 @@
             badges: [],
             lastQuestionKey: null,
             mistakesQueue: [],
-            micRetries: 0,
-            maxMicRetries: 3,
             answerLocked: false,
-            wantListening: false,
             gameEnded: false,
             timerEndAt: 0,
             bubbleTimer: null,
+            // Microphone controller state (see the controller below)
+            micState: 'off', // off | starting | listening | stopping | blocked | unsupported
+            micIntent: false,
+            micPendingStart: false,
+            micMuted: false,
+            micRestarts: 0,
+            micRetryHint: false,
+            micPermission: 'unknown', // unknown | granted | denied
+            micStartTimer: null,
+            micResumeWanted: false,
+            speaking: false,
+            speechTimer: null,
             language: 'en-US' // Default language
         };
 
@@ -599,7 +616,7 @@
             document.getElementById('lblScore').innerText = t.score;
             document.getElementById('lblStreak').innerText = t.streak;
             document.getElementById('lblWhatIs').innerText = t.whatIs;
-            document.getElementById('micStatus').innerText = state.isListening ? t.listening : t.tapSpeak;
+            renderMic();
             document.getElementById('toggleKeypadBtn').innerText = state.usingKeypad ? t.closeKeypad : t.keypad;
             document.getElementById('btnCloseKeypad').innerText = t.closeKeypad;
             document.getElementById('btnAbort').innerText = t.abort;
@@ -681,78 +698,234 @@
         const synth = window.speechSynthesis;
         let recognition = null;
 
-        // Central start/stop helpers: recognition is null on browsers without
-        // SpeechRecognition (notably iOS Safari), and every old call site either
-        // threw or silently did nothing there.
-        function startListening() {
-            if (!recognition || state.usingKeypad || state.answerLocked) return;
-            state.wantListening = true;
-            if (state.isListening) return;
-            try { recognition.start(); } catch (e) { /* already started */ }
+        // --- Microphone controller ---
+        // The recognizer is owned by this small state machine and nothing else
+        // starts or stops it. The previous version scattered start/stop calls
+        // across speak(), recognition.onend, the mic button and setTimeout()s,
+        // and inferred the UI from two booleans that routinely disagreed with
+        // the real recognizer. Symptoms: the mic "closed itself" after a few
+        // silent seconds and the next tap then did nothing (a stale
+        // wantListening=true made the tap a stop instead of a start), start()
+        // calls landing while a stop was still in flight threw
+        // InvalidStateError and the intent was lost, and timers from an
+        // earlier question could open the mic during the next one.
+        const MAX_MIC_RESTARTS = 2;
+
+        function canListen() {
+            return state.isPlaying && !state.usingKeypad && !state.answerLocked && !state.speaking && !state.micMuted;
         }
-        function stopListening() {
-            state.wantListening = false;
+
+        function clearHeard() {
+            const el = document.getElementById('heardText');
+            if (el) el.textContent = '';
+            const disp = document.getElementById('userAnswerDisplay');
+            if (disp) disp.classList.remove('opacity-50');
+        }
+
+        function showHeard(transcript) {
+            const el = document.getElementById('heardText');
+            if (el) el.textContent = i18n[state.language].heard + '\u201c' + transcript + '\u201d';
+            const n = parseSpokenNumber(transcript);
+            if (n !== null) {
+                const disp = document.getElementById('userAnswerDisplay');
+                disp.innerText = n;
+                disp.classList.add('opacity-50');
+            }
+        }
+
+        // Single writer for everything the mic button and status line show.
+        function renderMic() {
+            const btn = document.getElementById('micBtn');
+            const status = document.getElementById('micStatus');
+            if (!btn || !status) return;
+            const t = i18n[state.language];
+            btn.classList.remove('pulse-mic', 'bg-green-500', 'border-green-400', 'bg-red-500', 'border-red-400', 'bg-amber-500', 'border-amber-400', 'bg-slate-600', 'border-slate-500');
+            status.classList.remove('text-green-400');
+            if (!state.voiceSupported) { status.innerText = t.voiceUnsupported; return; }
+            if (state.micState === 'listening') {
+                btn.classList.add('pulse-mic', 'bg-green-500', 'border-green-400');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                status.innerText = t.listening;
+                status.classList.add('text-green-400');
+            } else if (state.micState === 'starting') {
+                btn.classList.add('bg-amber-500', 'border-amber-400');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                status.innerText = t.micStarting;
+            } else if (state.micState === 'blocked') {
+                btn.classList.add('bg-slate-600', 'border-slate-500');
+                btn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+                status.innerText = t.micDenied;
+            } else { // off / stopping
+                btn.classList.add('bg-red-500', 'border-red-400');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                status.innerText = state.micRetryHint ? t.micRetry : t.tapSpeak;
+            }
+            btn.setAttribute('aria-label', status.innerText);
+        }
+
+        function micRequestStart(source) {
             if (!recognition) return;
-            try { recognition.stop(); } catch (e) {}
+            if (!canListen()) return;
+            if (state.micPermission === 'denied' && source === 'auto') { state.micState = 'blocked'; renderMic(); return; }
+            if (state.micState === 'starting' || state.micState === 'listening') return;
+            if (state.micState === 'stopping') { state.micPendingStart = true; state.micIntent = true; return; }
+            state.micIntent = true;
+            state.micRetryHint = false;
+            state.micState = 'starting';
+            renderMic();
+            try {
+                recognition.start();
+            } catch (e) {
+                // Browser says it is already running; our state was stale.
+                state.micState = 'listening';
+                renderMic();
+            }
         }
+
+        function micRequestStop() {
+            state.micIntent = false;
+            state.micPendingStart = false;
+            if (state.micStartTimer) { clearTimeout(state.micStartTimer); state.micStartTimer = null; }
+            clearHeard();
+            if (!recognition) return;
+            if (state.micState === 'listening' || state.micState === 'starting') {
+                state.micState = 'stopping';
+                try { recognition.stop(); } catch (e) {}
+            } else if (state.micState !== 'blocked') {
+                state.micState = 'off';
+            }
+            renderMic();
+        }
+
+        // Keep the mic in sync with tab visibility: Chrome kills recognition
+        // in hidden tabs, which used to leave the state machine in limbo.
+        document.addEventListener('visibilitychange', () => {
+            if (!recognition) return;
+            if (document.visibilityState === 'hidden') {
+                if (state.micState === 'listening' || state.micState === 'starting') {
+                    state.micResumeWanted = state.micIntent;
+                    state.micIntent = false;
+                    state.micState = 'stopping';
+                    try { recognition.stop(); } catch (e) {}
+                    state.micState = 'off';
+                    renderMic();
+                }
+            } else if (state.micResumeWanted) {
+                state.micResumeWanted = false;
+                micRequestStart('auto');
+            }
+        });
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
             recognition.continuous = false;
             recognition.lang = state.language; // Initial lang
-            recognition.interimResults = false;
+            recognition.interimResults = true; // live feedback while the child speaks
             recognition.maxAlternatives = 3;
             state.voiceSupported = true;
 
+            // Know the permission state up front: after a denial the game must
+            // stop auto-opening the mic (that loop felt like it opening and
+            // closing by itself) while a manual tap can still retry.
+            try {
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'microphone' }).then((ps) => {
+                        state.micPermission = ps.state === 'granted' ? 'granted' : (ps.state === 'denied' ? 'denied' : 'unknown');
+                        if (ps.state === 'denied') { state.micState = 'blocked'; renderMic(); }
+                        ps.onchange = () => {
+                            state.micPermission = ps.state === 'granted' ? 'granted' : (ps.state === 'denied' ? 'denied' : 'unknown');
+                            if (state.micPermission === 'denied') { state.micIntent = false; state.micState = 'blocked'; renderMic(); }
+                        };
+                    }).catch(() => {});
+                }
+            } catch (e) {}
+
             recognition.onstart = () => {
-                if(!state.isPlaying) return;
-                state.isListening = true;
-                updateMicUI(true);
+                state.micState = 'listening';
+                renderMic();
             };
 
             recognition.onend = () => {
-                state.isListening = false;
-                // Restart only while we genuinely still want the mic: the game is
-                // running, no answer is being scored, and the keypad is closed.
-                // (The old code restarted on a retry counter even after an answer
-                // had been accepted, double-scoring the next thing it heard.)
-                if (state.isPlaying && state.wantListening && !state.usingKeypad && !state.answerLocked && state.micRetries < state.maxMicRetries) {
-                    state.micRetries++;
-                    try { recognition.start(); return; } catch(e) {}
+                if (state.micPendingStart && state.micIntent && canListen()) {
+                    state.micPendingStart = false;
+                    state.micState = 'off';
+                    micRequestStart('user');
+                    return;
                 }
-                updateMicUI(false);
+                state.micPendingStart = false;
+                if (state.micIntent && canListen() && state.micRestarts < MAX_MIC_RESTARTS) {
+                    // Chrome ends the session after a pause or a result; reopen
+                    // it a bounded number of times per question, with a beat in
+                    // between instead of a synchronous restart storm.
+                    state.micRestarts++;
+                    state.micState = 'off';
+                    renderMic();
+                    state.micStartTimer = setTimeout(() => {
+                        state.micStartTimer = null;
+                        if (state.micIntent && canListen()) micRequestStart('user');
+                    }, 250);
+                    return;
+                }
+                if (state.micIntent && canListen()) {
+                    // Gave it MAX_MIC_RESTARTS tries: settle, and say so, instead
+                    // of silently dying with a stale "Listening..." UI.
+                    state.micIntent = false;
+                    state.micRetryHint = true;
+                }
+                state.micState = state.micPermission === 'denied' ? 'blocked' : 'off';
+                renderMic();
             };
 
             recognition.onresult = (event) => {
-                if(!state.isPlaying) return;
-                state.micRetries = 0;
-                // Try every alternative: the top guess is often a word form
-                // ("twenty four") while another alternative is digits ("24").
-                const results = event.results[event.results.length - 1];
-                for (let i = 0; i < results.length; i++) {
-                    if (parseSpokenNumber(results[i].transcript) !== null) {
-                        processVoiceInput(results[i].transcript);
+                if (!state.isPlaying || state.answerLocked) return;
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const res = event.results[i];
+                    if (res.isFinal) {
+                        state.micRestarts = 0;
+                        clearHeard();
+                        // Try every alternative: the top guess is often a word
+                        // form ("twenty four") while another is digits ("24").
+                        for (let j = 0; j < res.length; j++) {
+                            if (parseSpokenNumber(res[j].transcript) !== null) {
+                                processVoiceInput(res[j].transcript);
+                                return;
+                            }
+                        }
+                        processVoiceInput(res[0].transcript);
                         return;
                     }
+                    interim += res[0].transcript;
                 }
-                processVoiceInput(results[0].transcript);
+                if (interim) showHeard(interim);
             };
 
             recognition.onerror = (event) => {
-                if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
-                    state.wantListening = false;
-                    state.isListening = false;
-                    updateMicUI(false);
+                const err = event.error;
+                if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
+                    state.micPermission = 'denied';
+                    state.micIntent = false;
+                    state.micState = 'blocked';
+                    renderMic();
                     showBubble(i18n[state.language].micDenied, 2500);
-                    if (state.isPlaying) openKeypad();
+                    if (state.isPlaying && !state.usingKeypad) openKeypad();
+                } else if (err === 'network') {
+                    // Chrome's recognizer needs its online service; offline it
+                    // used to fail silently into the same limbo.
+                    state.micIntent = false;
+                    state.micState = 'off';
+                    renderMic();
+                    showBubble(i18n[state.language].micNetwork, 2500);
+                    if (state.isPlaying && !state.usingKeypad) openKeypad();
                 }
-                // 'no-speech' / 'aborted': onend handles state + any restart.
+                // 'no-speech' / 'aborted': onend owns the follow-up.
             };
         } else {
             // No SpeechRecognition in this browser. This is the normal case on
             // iPhone/iPad Safari, so make the keypad the primary input cleanly
             // instead of leaving a dead mic button on screen.
+            state.micState = 'unsupported';
             document.getElementById('micBtn').style.display = 'none';
             document.getElementById('toggleKeypadBtn').style.display = 'none';
             document.getElementById('micStatus').innerText = i18n[state.language].voiceUnsupported;
@@ -829,6 +1002,9 @@
             state.mistakesQueue = []; 
             state.lastQuestionKey = null;
             state.isPlaying = true;
+            state.micMuted = false;
+            state.micRestarts = 0;
+            micRequestStop();
             
             requestWakeLock();
             
@@ -887,7 +1063,10 @@
         function nextQuestion() {
             if(!state.isPlaying) return;
             state.answerLocked = false;
-            state.micRetries = 0;
+            state.micRestarts = 0;
+            state.micMuted = false;
+            state.micRetryHint = false;
+            clearHeard();
 
             if(state.mode === 'test' && state.testType === 'count') {
                 if(state.questionsCount >= state.targetQuestions) {
@@ -959,7 +1138,7 @@
 
             if (state.mode === 'test' && state.testType === 'time') {
                 if (state.voiceSupported && !state.usingKeypad) {
-                    setTimeout(() => { if(state.isPlaying) startListening(); }, 400);
+                    setTimeout(() => { if(state.isPlaying) micRequestStart('auto'); }, 400);
                 }
             } else {
                 setTimeout(() => {
@@ -1036,6 +1215,7 @@
 
         function processVoiceInput(text) {
             if(!state.isPlaying || state.usingKeypad || state.answerLocked) return;
+            document.getElementById('userAnswerDisplay').classList.remove('opacity-50');
             const number = parseSpokenNumber(text);
             document.getElementById('userAnswerDisplay').innerText = number === null ? "?" : number;
             if (number !== null) {
@@ -1052,7 +1232,7 @@
             // code scored it as a miss and counted the question.
             if (userAns === null || userAns === undefined || isNaN(userAns)) return;
             state.answerLocked = true;
-            stopListening();
+            micRequestStop();
             if (userAns === state.currentQ.ans) {
                 handleCorrect();
             } else {
@@ -1129,7 +1309,7 @@
             state.gameEnded = true;
             state.isPlaying = false;
             clearInterval(state.timer);
-            stopListening();
+            micRequestStop();
             closeKeypad();
 
             document.getElementById('gameArea').classList.add('hidden');
@@ -1189,7 +1369,7 @@
         }
 
         function resetToMenu() {
-            stopListening();
+            micRequestStop();
             closeKeypad();
             if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
             document.getElementById('gameOverScreen').classList.add('hidden');
@@ -1206,7 +1386,7 @@
         function quitGame() {
             state.isPlaying = false;
             clearInterval(state.timer);
-            stopListening();
+            micRequestStop();
             closeKeypad();
             if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
             document.getElementById('gameArea').classList.add('hidden');
@@ -1223,24 +1403,6 @@
                 const star = document.createElement('i');
                 star.className = `fa-solid fa-star text-sm ${i < state.streak ? 'text-yellow-400 pop-in' : 'text-slate-700'}`;
                 container.appendChild(star);
-            }
-        }
-
-        function updateMicUI(listening) {
-            const btn = document.getElementById('micBtn');
-            const status = document.getElementById('micStatus');
-            const t = i18n[state.language];
-            
-            if (listening) {
-                btn.classList.add('pulse-mic', 'bg-green-500', 'border-green-400');
-                btn.classList.remove('bg-red-500', 'border-red-400');
-                status.innerText = t.listening;
-                status.classList.add('text-green-400');
-            } else {
-                btn.classList.remove('pulse-mic', 'bg-green-500', 'border-green-400');
-                btn.classList.add('bg-red-500', 'border-red-400');
-                status.innerText = t.tapSpeak;
-                status.classList.remove('text-green-400');
             }
         }
 
@@ -1266,8 +1428,7 @@
             if (btn) btn.innerText = t.closeKeypad;
             document.body.classList.add('keypad-open');
             state.usingKeypad = true;
-            stopListening();
-            updateMicUI(false);
+            micRequestStop();
         }
 
         function closeKeypad() {
@@ -1323,8 +1484,18 @@
         if (synth) { refreshVoices(); if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = refreshVoices; }
 
         function speak(text, autoListen = false) {
-            if (!synth) { if (autoListen) startListening(); return; }
+            if (!synth) { if (autoListen) micRequestStart('auto'); return; }
+            // The mic must never hear the game itself: pause it while talking,
+            // and remember whether it wanted to be on.
+            const resumeMic = state.micIntent;
+            if (state.micState === 'listening' || state.micState === 'starting') {
+                state.micIntent = false;
+                state.micPendingStart = false;
+                state.micState = 'stopping';
+                try { recognition.stop(); } catch (e) {}
+            }
             if (synth.speaking || synth.pending) synth.cancel();
+            if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
             const utter = new SpeechSynthesisUtterance(text);
             utter.rate = 1.0;
             utter.pitch = 1.1;
@@ -1339,22 +1510,27 @@
             if (preferredVoice) utter.voice = preferredVoice;
             utter.lang = state.language;
 
-            // Handlers must be attached BEFORE speak(): on iOS, assigning onend
-            // afterwards can miss the event entirely, and the mic never opens.
-            let listenStarted = false;
-            const beginListening = () => {
-                if (listenStarted) return;
-                listenStarted = true;
-                if (state.isPlaying && !state.usingKeypad && !state.answerLocked) startListening();
+            // Handlers attach BEFORE speak() (iOS can miss onend otherwise).
+            state.speaking = true;
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                state.speaking = false;
+                if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
+                if (autoListen || resumeMic) micRequestStart('auto');
             };
-            if (autoListen && state.voiceSupported && !state.usingKeypad) {
-                utter.onend = beginListening;
-                utter.onerror = beginListening;
-                // iOS sometimes never fires onend for cancelled utterances:
-                // fall back on a generous estimate so the game cannot stall.
-                const fallbackMs = Math.min(6000, 1200 + text.length * 110);
-                setTimeout(beginListening, fallbackMs);
-            }
+            utter.onend = finish;
+            utter.onerror = finish;
+            // If onend never fires (a recurring browser bug, esp. after
+            // cancel()), do not leave the mic blocked forever - but tie the
+            // fallback to THIS utterance and cancel it when a new speak() or
+            // question supersedes it, so it cannot open the mic mid-next-question.
+            state.speechTimer = setTimeout(() => {
+                state.speechTimer = null;
+                state.speaking = false;
+                if (autoListen || resumeMic) micRequestStart('auto');
+            }, Math.min(7000, 1500 + text.length * 120));
             synth.speak(utter);
         }
 
@@ -1408,8 +1584,16 @@
         document.getElementById('micBtn').addEventListener('click', () => {
             unlockAudio();
             if (!recognition) return;
-            if (state.isListening || state.wantListening) stopListening();
-            else startListening();
+            if (state.micState === 'listening' || state.micState === 'starting') {
+                // Mute for the rest of this question: auto-listen must not
+                // reopen a mic the user deliberately closed.
+                state.micMuted = true;
+                micRequestStop();
+            } else {
+                state.micMuted = false;
+                if (state.micState === 'blocked') state.micState = 'off'; // manual retry after a denial
+                micRequestStart('user');
+            }
         });
 
         // Physical keyboard entry (desktop / iPad with keyboard): digits type,
