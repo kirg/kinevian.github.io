@@ -4,7 +4,7 @@
 // so installed users never received updates. Now: local assets only,
 // per-asset install, network-first for the page, cache-first for assets,
 // and old caches are deleted on activate.
-const CACHE_NAME = 'galactic-multiplier-v10';
+const CACHE_NAME = 'galactic-multiplier-v11';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +23,8 @@ const ASSETS = [
   './vendor/fontawesome/webfonts/fa-regular-400.woff2',
   './manifest.json',
   './icon.png',
+  './favicon.ico',
+  './apple-touch-icon-180.png',
   './icon-192.png'
 ];
 
