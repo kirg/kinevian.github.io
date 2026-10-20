@@ -1,6 +1,7 @@
 """Run with Playwright against the real HTML; speech services are mocked."""
 import functools
 import os
+import socket
 from pathlib import Path
 import threading
 import unittest
@@ -20,6 +21,19 @@ window.SpeechRecognition = class {
 """
 
 class Handler(SimpleHTTPRequestHandler):
+    offline = False
+    def do_GET(self):
+        if self.offline:
+            # Drop the server connection to exercise worker network failures in
+            # both engines without depending on emulated offline navigation.
+            self.close_connection = True
+            try:
+                self.connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            self.connection.close()
+            return
+        super().do_GET()
     def log_message(self, *_): pass
 
 class BrowserChecks(unittest.TestCase):
@@ -140,11 +154,14 @@ class BrowserChecks(unittest.TestCase):
     def test_offline_shell(self):
         self.page.evaluate("navigator.serviceWorker.ready")
         self.page.wait_for_function("navigator.serviceWorker.controller !== null")
-        self.context.set_offline(True)
-        self.page.goto(self.url+"?offline=1",wait_until="domcontentloaded")
-        self.page.wait_for_function("typeof startGame==='function'")
-        self.page.evaluate("startGame(); addKey(1)")
-        self.assertEqual(self.page.locator("#userAnswerDisplay").inner_text(),"1")
+        Handler.offline = True
+        try:
+            self.page.goto(self.url+"?offline=1",wait_until="domcontentloaded")
+            self.page.wait_for_function("typeof startGame==='function'")
+            self.page.evaluate("startGame(); addKey(1)")
+            self.assertEqual(self.page.locator("#userAnswerDisplay").inner_text(),"1")
+        finally:
+            Handler.offline = False
 
 if __name__ == "__main__":
     unittest.main()

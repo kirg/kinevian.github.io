@@ -739,6 +739,9 @@
 
         function updateTexts() {
             const t = i18n[state.language];
+            document.documentElement.lang = state.language;
+            document.getElementById('langBtn').innerText = state.language === 'en-US' ? '🇺🇸' : '🇩🇪';
+            document.getElementById('langBtn').setAttribute('aria-label', state.language === 'en-US' ? 'Switch to German' : 'Zu Englisch wechseln');
             document.getElementById('appTitle').innerHTML = t.title;
             document.getElementById('lblMissionControl').innerText = t.missionControl;
             document.getElementById('btnViewHall').innerText = t.viewHall;
