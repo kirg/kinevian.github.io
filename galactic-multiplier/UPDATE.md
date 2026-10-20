@@ -1,5 +1,12 @@
 # October 19 update
 
+## Follow-up from mobile photos
+
+- Question digits and streak stars no longer rely on an opacity animation to become visible. Reduced-motion settings, disabled animations, and paused animations retain visible text.
+- The title uses solid, high-contrast lettering and a restrained glow. It no longer relies on transparent text with gradient clipping, which could leave only a blurred shadow.
+- Keypad-mode actions use compact rows, with one input-mode switch. The question and answer remain in the visible viewport after tapping OK, including small portrait screens and landscape.
+- Cache v14 refreshes installed copies. Browser regression checks verify actual opacity, letter-fill contrast, and viewport visibility, alongside screenshots in Chromium and WebKit.
+
 These changes incorporate the remaining review fixes into the current app. They retain the existing theme, self-hosted fonts/icons, microphone state machine, interim transcripts, and bounded auto-listen behavior.
 
 - Keypad participates in page layout. Dynamic viewport height, safe areas, scrollable screens, compact question sizing, and landscape columns keep controls reachable. Language/install controls no longer overlap the title.

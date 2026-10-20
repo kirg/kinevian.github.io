@@ -60,7 +60,7 @@ function worker(options = {}) {
 test('installation caches only a complete local shell', async () => {
     const sw = worker();
     await sw.lifecycle('install');
-    const urls = [...sw.stores.get('galactic-multiplier-v13').keys()];
+    const urls = [...sw.stores.get('galactic-multiplier-v14').keys()];
     assert.equal(urls.length, 22);
     assert.ok(urls.every(url => url.startsWith('https://kinevian.com/galactic-multiplier/')));
     assert.ok(urls.some(url => url.endsWith('/numbers.js')));
@@ -70,10 +70,12 @@ test('installation caches only a complete local shell', async () => {
 test('activation removes old game caches while retaining unrelated apps', async () => {
     const sw = worker();
     sw.stores.set('galactic-multiplier-v9', new Map());
+    sw.stores.set('galactic-multiplier-v13', new Map());
     sw.stores.set('geobingo-v1', new Map());
     await sw.lifecycle('install');
     await sw.lifecycle('activate');
     assert.equal(sw.stores.has('galactic-multiplier-v9'), false);
+    assert.equal(sw.stores.has('galactic-multiplier-v13'), false);
     assert.equal(sw.stores.has('geobingo-v1'), true);
     assert.deepEqual(sw.claimed, ['skipped', 'claimed']);
 });

@@ -100,7 +100,7 @@ test('bad or unavailable saved data does not prevent awarding badges', () => {
 });
 test('single target keeps factors 11/12 and cannot repeat the previous fact', () => {
     const app=setup();
-    app.run('state.practiceNums=[2]; startGame(); Math.random=()=>.999; nextQuestion()');
+    app.run('state.practiceNums=[2]; startGame(); state.lastQuestionKey=null; Math.random=()=>.999; nextQuestion()');
     assert.equal(app.state.currentQ.rawN2,12);
     app.run('nextQuestion()');
     assert.equal(app.state.currentQ.rawN2,11);
