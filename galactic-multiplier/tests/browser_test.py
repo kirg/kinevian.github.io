@@ -71,6 +71,8 @@ class BrowserChecks(unittest.TestCase):
                 self.assertGreaterEqual(title["y"],language["y"]+language["height"])
                 self.page.evaluate("startGame()")
                 self.assert_no_overflow()
+                self.assertEqual(self.page.evaluate("getComputedStyle(document.body).overflowY"),"auto")
+                self.assertEqual(self.page.locator("#keypad").evaluate("el => getComputedStyle(el).position"),"relative")
                 answer = self.page.locator("#userAnswerDisplay").bounding_box()
                 keypad = self.page.locator("#keypad").bounding_box()
                 if height > width:
