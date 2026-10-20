@@ -5,7 +5,7 @@ on:
       - 'galactic-multiplier/**'
       - '.github/workflows/galactic-multiplier.yml'
   push:
-    branches: [main]
+    branches: [main, 'codex/photo-rendering-fixes-20261020']
     paths:
       - 'galactic-multiplier/**'
       - '.github/workflows/galactic-multiplier.yml'
