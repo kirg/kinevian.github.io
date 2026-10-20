@@ -38,6 +38,8 @@
     <link rel="stylesheet" href="fonts.css">
     <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="fixes.css">
+    <script src="numbers.js"></script>
     
     <!-- Standard CSS for Fonts and Animations -->
     <style>
@@ -206,7 +208,7 @@
         <!-- Question -->
         <div class="text-center mb-8">
             <div class="text-xl text-purple-300 mb-2" id="lblWhatIs">What is...</div>
-            <div class="flex items-center justify-center gap-4 text-6xl font-bold neon-text bg-slate-900/50 p-6 rounded-3xl border border-purple-500/30 backdrop-blur-sm">
+            <div id="questionBox" role="status" aria-live="polite" class="flex items-center justify-center gap-4 text-6xl font-bold neon-text bg-slate-900/50 p-6 rounded-3xl border border-purple-500/30 backdrop-blur-sm">
                 <span id="num1" class="text-purple-400">?</span>
                 <span id="operatorSign" class="text-white text-4xl">×</span>
                 <span id="num2" class="text-purple-400">?</span>
@@ -219,7 +221,7 @@
         </div>
 
         <!-- Controls -->
-        <div class="w-full flex flex-col items-center gap-4">
+        <div id="gameControls" class="w-full flex flex-col items-center gap-4">
             
             <!-- Mic Button -->
             <button type="button" aria-label="Speak answer" id="micBtn" class="w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center text-3xl shadow-lg border-4 border-red-400 transition-all hover:scale-105 active:scale-95">
@@ -232,6 +234,8 @@
             <button id="toggleKeypadBtn" class="text-sm text-blue-300 underline decoration-dotted mt-2">
                 Use Keypad Instead
             </button>
+            <button onclick="pauseGame()" id="btnPause" class="text-sm text-blue-300">Pause</button>
+            <button onclick="endGame()" id="btnFinish" class="text-sm text-blue-300">Finish Drill</button>
             <button onclick="quitGame()" id="btnAbort" class="text-xs text-red-400/60 mt-4 hover:text-red-400">Abort Mission</button>
         </div>
     </div>
@@ -309,11 +313,11 @@
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="setTestType('time')" id="btnTestTime" class="mode-btn active flex flex-col items-center justify-center py-4">
                     <i class="fa-solid fa-stopwatch text-xl mb-1"></i>
-                    <span>1 Min Blitz</span>
+                    <span id="lblBlitz">1 Min Blitz</span>
                 </button>
                 <button onclick="setTestType('count')" id="btnTestCount" class="mode-btn flex flex-col items-center justify-center py-4">
                     <i class="fa-solid fa-list-ol text-xl mb-1"></i>
-                    <span>20 Qs</span>
+                    <span id="lblTwenty">20 Qs</span>
                 </button>
             </div>
         </div>
@@ -323,10 +327,16 @@
                 <i class="fa-solid fa-rocket"></i> <span id="startBtnText">Start Drill</span>
             </button>
             <p id="lblEnableMic" class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
+            <label class="text-sm text-slate-300"><input id="soundToggle" type="checkbox" checked onchange="state.sound=this.checked; saveSettings(); cancelSpeech()"> <span id="lblSound">Read questions and play sounds</span></label>
             <p id="iosInstallHint" class="hidden text-xs text-blue-300 mt-2 text-center">To install: tap Share, then &ldquo;Add to Home Screen&rdquo;</p>
         </div>
     </div>
 
+    <div id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" class="screen-overlay hidden bg-slate-900 z-[60] flex flex-col items-center justify-center p-6 text-center">
+        <h2 id="pauseTitle" class="text-2xl font-bold mb-6">Mission Paused</h2>
+        <button id="btnResume" onclick="resumeGame()" class="w-64 py-3 bg-blue-600 rounded-full mb-4">Resume Mission</button>
+        <button id="btnPauseQuit" onclick="quitGame()" class="w-64 py-3 bg-slate-700 rounded-full">Return to Base</button>
+    </div>
     <!-- Separate Hall of Fame Screen -->
     <div id="hallOfFameScreen" class="screen-overlay hidden absolute inset-0 bg-slate-900 z-50 flex flex-col items-center p-6">
         <div class="mt-4 mb-6 text-center">
@@ -362,7 +372,8 @@
                 <div class="badge-pts">1500 pts</div>
             </div>
             <div id="badge-supernova" class="badge-slot">
-                <div class="lock-icon"><i class="fa-solid fa-sun main-icon sun"></i></div>
+                <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                <i class="fa-solid fa-sun main-icon sun"></i>
                 <div class="badge-title">Supernova<br>Spec</div>
                 <div class="badge-pts">2000 pts</div>
             </div>
@@ -374,6 +385,7 @@
             </div>
         </div>
 
+        <p id="storageNotice" role="status" class="storage-notice"></p>
         <button onclick="closeHallOfFame()" id="btnReturnHall" class="mt-4 w-full max-w-sm py-4 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500 flex items-center justify-center">
             <i class="fa-solid fa-arrow-left mr-2"></i> Return to Base
         </button>
@@ -401,6 +413,7 @@
             </div>
         </div>
 
+        <p id="resultStorageNotice" role="status" class="storage-notice"></p>
         <button onclick="resetToMenu()" id="btnReturnOver" class="w-64 py-3 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500">
             <i class="fa-solid fa-house mr-2"></i> Return to Base
         </button>
@@ -430,6 +443,11 @@
                 keypad: "Use Keypad Instead",
                 closeKeypad: "Close Keypad",
                 abort: "Abort Mission",
+                pause: "Pause", paused: "Mission Paused", resume: "Resume Mission", finish: "Finish Drill",
+                blitz: "1 Min Blitz", twenty: "20 Questions", useVoice: "Use Microphone",
+                sound: "Read questions and play sounds",
+                storage: "Progress cannot be saved in this browser. You can still play for this visit.",
+                ranks: ["Space Cadet", "Rocket Pilot", "Mission Commander", "Galactic Legend", "Nebula Navigator", "Supernova Specialist", "Universal Master"],
                 questionMul: (n1, n2) => `What is ${n1} times ${n2}?`,
                 questionDiv: (n1, n2) => `What is ${n1} divided by ${n2}?`,
                 correct: (ans) => `The answer is ${ans}`,
@@ -474,6 +492,11 @@
                 keypad: "Tastatur benutzen",
                 closeKeypad: "Tastatur schließen",
                 abort: "Mission abbrechen",
+                pause: "Pause", paused: "Mission pausiert", resume: "Mission fortsetzen", finish: "Übung beenden",
+                blitz: "1 Minute", twenty: "20 Fragen", useVoice: "Mikrofon benutzen",
+                sound: "Fragen vorlesen und Töne abspielen",
+                storage: "Fortschritt kann hier nicht gespeichert werden. Du kannst trotzdem für diesen Besuch spielen.",
+                ranks: ["Weltraumkadett", "Raketenpilot", "Missionskommandant", "Galaktische Legende", "Nebel-Navigator", "Supernova-Spezialist", "Meister des Universums"],
                 questionMul: (n1, n2) => `Wieviel ist ${n1} mal ${n2}?`,
                 questionDiv: (n1, n2) => `Wieviel ist ${n1} geteilt durch ${n2}?`,
                 correct: (ans) => `Die Antwort ist ${ans}`,
@@ -529,26 +552,24 @@
         // --- Wake Lock (Prevent Screen Sleep) ---
         let wakeLock = null;
         async function requestWakeLock() {
-            if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Screen Wake Lock active');
-                    wakeLock.addEventListener('release', () => {
-                        console.log('Screen Wake Lock released');
-                    });
-                } catch (err) {
-                    if (err.name !== 'NotAllowedError') {
-                        console.log('Wake Lock request failed:', err.name);
-                    }
-                }
-            }
+            if (!navigator.wakeLock || !state.isPlaying || state.paused || wakeLock || document.visibilityState !== 'visible') return;
+            const session = state.session;
+            try {
+                const lock = await navigator.wakeLock.request('screen');
+                if (session !== state.session || !state.isPlaying || state.paused || wakeLock) { await lock.release(); return; }
+                wakeLock = lock;
+                lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+            } catch {}
         }
-
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
-            }
+        function releaseWakeLock() {
+            const lock = wakeLock;
+            wakeLock = null;
+            if (lock) lock.release().catch(() => {});
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') pauseGame();
         });
+        window.addEventListener('pagehide', () => { pauseGame(); releaseWakeLock(); });
 
         // --- Game State ---
         const state = {
@@ -557,7 +578,7 @@
             currentQ: { displayN1: 0, displayN2: 0, ans: 0, speech: "", rawN1: 0, rawN2: 0 },
             voiceSupported: false,
             keypadInput: "",
-            usingKeypad: false,
+            usingKeypad: true,
             mode: 'practice', 
             operation: 'multiply', 
             testType: 'time', 
@@ -587,8 +608,123 @@
             micResumeWanted: false,
             speaking: false,
             speechTimer: null,
-            language: 'en-US' // Default language
+            language: 'en-US',
+            session: 0, questionId: 0, pendingTimers: new Set(), speechEpoch: 0,
+            paused: false, remainingMs: 60000, storageAvailable: true, sound: true, preferredInput: 'keypad'
         };
+
+
+        function schedule(callback, ms) {
+            const session = state.session, questionId = state.questionId;
+            const id = setTimeout(() => {
+                state.pendingTimers.delete(id);
+                if (session === state.session && questionId === state.questionId) callback();
+            }, ms);
+            state.pendingTimers.add(id);
+            return id;
+        }
+        function cancelSpeech() {
+            state.speechEpoch++;
+            state.speaking = false;
+            if (state.speechTimer) clearTimeout(state.speechTimer);
+            state.speechTimer = null;
+            try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch {}
+        }
+        function cancelQuestionActivity() {
+            for (const id of state.pendingTimers) clearTimeout(id);
+            state.pendingTimers.clear();
+            micRequestStop();
+            cancelSpeech();
+        }
+        function cancelActivity() {
+            cancelQuestionActivity();
+            clearInterval(state.timer);
+            state.timer = null;
+            state.micResumeWanted = false;
+            releaseWakeLock();
+        }
+        function disposeRecognition() {
+            if (!recognition) return;
+            const old = recognition;
+            recognition = null;
+            old.onstart = old.onend = old.onresult = old.onerror = null;
+            try { old.abort(); } catch {}
+        }
+        function updateAnswerControls() {
+            const disabled = !state.isPlaying || state.paused || state.answerLocked;
+            for (const btn of document.querySelectorAll('#keypad .key-btn')) btn.disabled = disabled;
+            document.getElementById('micBtn').disabled = disabled;
+        }
+        function tickTimer() {
+            if (!state.isPlaying || state.paused) return;
+            state.remainingMs = Math.max(0, state.timerEndAt - performance.now());
+            state.timeRemaining = Math.ceil(state.remainingMs / 1000);
+            const el = document.getElementById('statusValue');
+            el.innerText = state.timeRemaining + 's';
+            el.classList.toggle('text-red-400', state.timeRemaining <= 10);
+            if (!state.remainingMs) endGame();
+        }
+        function pauseGame() {
+            if (!state.isPlaying || state.paused) return;
+            if (state.mode === 'test' && state.testType === 'time') {
+                tickTimer();
+                if (!state.isPlaying) return;
+            }
+            state.paused = true;
+            state.resumeKeypad = state.usingKeypad;
+            cancelActivity();
+            closeKeypad();
+            document.getElementById('pauseScreen').classList.remove('hidden');
+            updateAnswerControls();
+        }
+        function resumeGame() {
+            if (!state.paused || !state.isPlaying) return;
+            state.paused = false;
+            document.getElementById('pauseScreen').classList.add('hidden');
+            if (state.resumeKeypad) openKeypad();
+            if (state.answerLocked) nextQuestion();
+            else { updateAnswerControls(); speak(state.currentQ.speech, true); }
+            if (state.mode === 'test' && state.testType === 'time' && state.isPlaying) startTimer();
+            requestWakeLock();
+        }
+        function updateStorageNotice() {
+            for (const id of ['storageNotice', 'resultStorageNotice']) document.getElementById(id).textContent =
+                state.storageAvailable ? '' : i18n[state.language].storage;
+        }
+        function saveSettings() {
+            try {
+                const { language, mode, operation, testType, practiceNums, sound } = state;
+                localStorage.setItem('galactic_settings', JSON.stringify({ language, mode, operation, testType, practiceNums, sound,
+                    inputMode: state.preferredInput }));
+            } catch { state.storageAvailable = false; updateStorageNotice(); }
+        }
+        function loadSettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('galactic_settings') || '{}');
+                if (!saved || typeof saved !== 'object') return;
+                if (['en-US', 'de-DE'].includes(saved.language)) state.language = saved.language;
+                if (['practice', 'test'].includes(saved.mode)) state.mode = saved.mode;
+                if (['multiply', 'divide'].includes(saved.operation)) state.operation = saved.operation;
+                if (['time', 'count'].includes(saved.testType)) state.testType = saved.testType;
+                if (typeof saved.sound === 'boolean') state.sound = saved.sound;
+                if (saved.inputMode === 'voice' && state.voiceSupported) { state.usingKeypad = false; state.preferredInput = 'voice'; }
+                if (Array.isArray(saved.practiceNums)) {
+                    const nums = [...new Set(saved.practiceNums.filter(n => Number.isInteger(n) && n >= 2 && n <= 12))];
+                    if (nums.length) state.practiceNums = nums;
+                }
+                document.documentElement.lang = state.language;
+                if (recognition) recognition.lang = state.language;
+            } catch { state.storageAvailable = false; }
+        }
+        function updateSelections() {
+            for (const [prefix, selected] of [
+                ['btnMode', state.mode === 'practice' ? 'Practice' : 'Test'],
+                ['btnOp', state.operation === 'multiply' ? 'Multiply' : 'Divide'],
+                ['btnTest', state.testType === 'time' ? 'Time' : 'Count']
+            ]) for (const btn of document.querySelectorAll('button[id^="' + prefix + '"]')) {
+                btn.setAttribute('aria-pressed', String(btn.id === prefix + selected));
+            }
+        }
 
         // --- Language Utils ---
         function toggleLanguage() {
@@ -596,6 +732,7 @@
             document.documentElement.lang = state.language;
             document.getElementById('langBtn').innerText = state.language === 'en-US' ? '🇺🇸' : '🇩🇪';
             updateTexts();
+            saveSettings();
             // Update recognition language immediately
             if (recognition) recognition.lang = state.language;
         }
@@ -630,6 +767,19 @@
             const iosHint = document.getElementById('iosInstallHint');
             if (iosHint) iosHint.innerText = t.iosHint;
             if (!state.voiceSupported) document.getElementById('micStatus').innerText = t.voiceUnsupported;
+            document.getElementById('btnPause').innerText = t.pause;
+            document.getElementById('pauseTitle').innerText = t.paused;
+            document.getElementById('btnResume').innerText = t.resume;
+            document.getElementById('btnPauseQuit').innerText = t.returnBase;
+            document.getElementById('btnFinish').innerText = t.finish;
+            document.getElementById('lblBlitz').innerText = t.blitz;
+            document.getElementById('lblTwenty').innerText = t.twenty;
+            document.getElementById('lblSound').innerText = t.sound;
+            document.getElementById('soundToggle').checked = state.sound;
+            if (state.usingKeypad && state.voiceSupported) document.getElementById('toggleKeypadBtn').innerText = t.useVoice;
+            const names = ['pilot', 'commander', 'legend', 'navigator', 'supernova', 'master'];
+            names.forEach((id, i) => document.querySelector('#badge-' + id + ' .badge-title').textContent = t.ranks[i + 1]);
+            updateStorageNotice();
             
             // Check rank title text update (only if game over screen visible really matters, but good to have)
             const rankEl = document.getElementById('rankTitle');
@@ -643,14 +793,11 @@
         // --- Persistence (Load Badges) ---
         function loadBadges() {
             try {
-                const saved = localStorage.getItem('galactic_badges');
-                if (saved) {
-                    state.badges = JSON.parse(saved);
-                    renderBadges();
-                }
-            } catch (e) {
-                console.log("Could not load badges");
-            }
+                const saved = JSON.parse(localStorage.getItem('galactic_badges') || '[]');
+                const valid = ['pilot', 'commander', 'legend', 'navigator', 'supernova', 'master'];
+                state.badges = Array.isArray(saved) ? [...new Set(saved.filter(id => valid.includes(id)))] : [];
+            } catch { state.storageAvailable = false; }
+            renderBadges();
         }
 
         function saveBadge(badgeId) {
@@ -659,7 +806,8 @@
                 try {
                     localStorage.setItem('galactic_badges', JSON.stringify(state.badges));
                 } catch (e) {
-                    console.log("Could not save badges", e);
+                    state.storageAvailable = false;
+                    updateStorageNotice();
                 }
                 renderBadges();
                 return true;
@@ -701,7 +849,7 @@
         // --- Microphone controller ---
         // The recognizer is owned by this small state machine and nothing else
         // starts or stops it. The previous version scattered start/stop calls
-        // across speak(), recognition.onend, the mic button and setTimeout()s,
+        // across speak(), recognition.onend, the mic button and schedule()s,
         // and inferred the UI from two booleans that routinely disagreed with
         // the real recognizer. Symptoms: the mic "closed itself" after a few
         // silent seconds and the next tap then did nothing (a stale
@@ -712,7 +860,7 @@
         const MAX_MIC_RESTARTS = 2;
 
         function canListen() {
-            return state.isPlaying && !state.usingKeypad && !state.answerLocked && !state.speaking && !state.micMuted;
+            return state.isPlaying && !state.paused && document.visibilityState === 'visible' && !state.usingKeypad && !state.answerLocked && !state.speaking && !state.micMuted;
         }
 
         function clearHeard() {
@@ -739,6 +887,7 @@
             const status = document.getElementById('micStatus');
             if (!btn || !status) return;
             const t = i18n[state.language];
+            btn.setAttribute('aria-pressed', String(state.micState === 'listening'));
             btn.classList.remove('pulse-mic', 'bg-green-500', 'border-green-400', 'bg-red-500', 'border-red-400', 'bg-amber-500', 'border-amber-400', 'bg-slate-600', 'border-slate-500');
             status.classList.remove('text-green-400');
             if (!state.voiceSupported) { status.innerText = t.voiceUnsupported; return; }
@@ -816,6 +965,7 @@
             }
         });
 
+        function initializeRecognition() {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
@@ -842,6 +992,7 @@
             } catch (e) {}
 
             recognition.onstart = () => {
+                if (!canListen() || !state.micIntent) { micRequestStop(); return; }
                 state.micState = 'listening';
                 renderMic();
             };
@@ -861,7 +1012,7 @@
                     state.micRestarts++;
                     state.micState = 'off';
                     renderMic();
-                    state.micStartTimer = setTimeout(() => {
+                    state.micStartTimer = schedule(() => {
                         state.micStartTimer = null;
                         if (state.micIntent && canListen()) micRequestStart('user');
                     }, 250);
@@ -878,7 +1029,7 @@
             };
 
             recognition.onresult = (event) => {
-                if (!state.isPlaying || state.answerLocked) return;
+                if (!canListen() || !state.micIntent || state.micState !== 'listening') return;
                 let interim = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const res = event.results[i];
@@ -921,6 +1072,12 @@
                 }
                 // 'no-speech' / 'aborted': onend owns the follow-up.
             };
+            const owner = recognition;
+            const session = state.session;
+            for (const name of ['onstart', 'onend', 'onresult', 'onerror']) {
+                const callback = owner[name];
+                owner[name] = event => { if (recognition === owner && session === state.session) callback(event); };
+            }
         } else {
             // No SpeechRecognition in this browser. This is the normal case on
             // iPhone/iPad Safari, so make the keypad the primary input cleanly
@@ -932,6 +1089,9 @@
             state.usingKeypad = true;
         }
 
+        }
+        initializeRecognition();
+
         // --- Configuration Logic ---
         const grid = document.getElementById('numGrid');
         for(let i=2; i<=12; i++) {
@@ -939,6 +1099,7 @@
             btn.className = `num-toggle ${state.practiceNums.includes(i) ? 'selected' : ''}`;
             btn.innerText = i;
             btn.onclick = () => togglePracticeNum(i, btn);
+            btn.setAttribute('aria-pressed', String(state.practiceNums.includes(i)));
             grid.appendChild(btn);
         }
 
@@ -952,6 +1113,8 @@
                 state.practiceNums.push(num);
                 btn.classList.add('selected');
             }
+            btn.setAttribute('aria-pressed', String(state.practiceNums.includes(num)));
+            saveSettings();
         }
 
         function setMode(m) {
@@ -967,6 +1130,8 @@
 
             document.getElementById('configTest').classList.toggle('hidden', m !== 'test');
             document.getElementById('startBtnText').innerText = m === 'practice' ? t.startDrill : t.launchMission;
+            saveSettings();
+            updateSelections();
         }
 
         function setOperation(op) {
@@ -981,16 +1146,33 @@
                 btnMul.classList.remove('active');
                 btnDiv.classList.add('active');
             }
+            saveSettings();
+            updateSelections();
         }
 
         function setTestType(t) {
             state.testType = t;
             document.getElementById('btnTestTime').classList.toggle('active', t === 'time');
             document.getElementById('btnTestCount').classList.toggle('active', t === 'count');
+            saveSettings();
+            updateSelections();
         }
 
         // --- Core Game Functions ---
         function startGame() {
+            const keypadWanted = state.preferredInput === 'keypad';
+            state.isPlaying = false;
+            state.session++;
+            cancelActivity();
+            disposeRecognition();
+            state.micState = 'off';
+            initializeRecognition();
+            state.usingKeypad = keypadWanted || !state.voiceSupported;
+            state.paused = false;
+            state.remainingMs = 60000;
+            document.body.classList.add('game-active');
+            document.getElementById('pauseScreen').classList.add('hidden');
+            document.getElementById('btnFinish').classList.toggle('hidden', state.mode !== 'practice');
             unlockAudio();
             if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
             state.gameEnded = false;
@@ -1045,25 +1227,20 @@
 
         function startTimer() {
             clearInterval(state.timer);
-            // Wall-clock deadline, not interval counting: iOS throttles timers in
-            // backgrounded/locked tabs, which used to hand out free extra time.
-            state.timerEndAt = Date.now() + state.timeRemaining * 1000;
-            const statusVal = document.getElementById('statusValue');
-            statusVal.classList.remove('text-red-400');
-            statusVal.innerText = state.timeRemaining + "s";
-            state.timer = setInterval(() => {
-                if(!state.isPlaying) { clearInterval(state.timer); return; }
-                const remaining = Math.max(0, Math.ceil((state.timerEndAt - Date.now()) / 1000));
-                state.timeRemaining = remaining;
-                statusVal.innerText = remaining + "s";
-                if(remaining <= 10) statusVal.classList.add('text-red-400');
-                if(remaining <= 0) endGame();
-            }, 250);
+            state.timerEndAt = performance.now() + state.remainingMs;
+            tickTimer();
+            state.timer = setInterval(tickTimer, 100);
         }
 
         function nextQuestion() {
-            if(!state.isPlaying) return;
+            if(!state.isPlaying || state.paused) return;
+            cancelQuestionActivity();
+            state.questionId++;
             state.answerLocked = false;
+            document.getElementById('userAnswerDisplay').classList.remove('text-green-400');
+            document.getElementById('mascot').innerText = '🛸';
+            document.getElementById('mascot').classList.remove('bounce');
+            updateAnswerControls();
             state.micRestarts = 0;
             state.micMuted = false;
             state.micRetryHint = false;
@@ -1080,7 +1257,7 @@
             let baseNum, factor;
             let isMistakeRetry = false;
 
-            if (state.mistakesQueue.length > 0 && Math.random() < 0.5) {
+            if (state.mode === 'practice' && state.mistakesQueue.length > 0 && Math.random() < 0.5) {
                 const potentialMistake = state.mistakesQueue[0];
                 const key = `${potentialMistake.n1}-${potentialMistake.n2}-${state.operation}`;
                 if (key !== state.lastQuestionKey) {
@@ -1092,15 +1269,11 @@
             }
 
             if (!isMistakeRetry) {
-                let attempts = 0;
-                do {
-                    const idx = Math.floor(Math.random() * state.practiceNums.length);
-                    baseNum = state.practiceNums[idx]; 
-                    factor = Math.floor(Math.random() * 11) + 2; // 2..12 (was 2..10, so 11/12 never appeared as the second number and division answers were never 11 or 12)
-                    const currentKey = `${baseNum}-${factor}-${state.operation}`;
-                    if (currentKey !== state.lastQuestionKey) break;
-                    attempts++;
-                } while (attempts < 5); 
+                const facts = [];
+                for (const base of state.practiceNums) for (let f = 2; f <= 12; f++) {
+                    if (base + '-' + f + '-' + state.operation !== state.lastQuestionKey) facts.push([base, f]);
+                }
+                [baseNum, factor] = facts[Math.floor(Math.random() * facts.length)];
             }
 
             state.lastQuestionKey = `${baseNum}-${factor}-${state.operation}`;
@@ -1135,14 +1308,14 @@
             num2El.classList.remove('pop-in');
             void num1El.offsetWidth; 
             num1El.classList.add('pop-in');
-            setTimeout(() => num2El.classList.add('pop-in'), 100);
+            schedule(() => num2El.classList.add('pop-in'), 100);
 
             if (state.mode === 'test' && state.testType === 'time') {
                 if (state.voiceSupported && !state.usingKeypad) {
-                    setTimeout(() => { if(state.isPlaying) micRequestStart('auto'); }, 400);
+                    schedule(() => { if(state.isPlaying) micRequestStart('auto'); }, 400);
                 }
             } else {
-                setTimeout(() => {
+                schedule(() => {
                     // Changed: Pass true to explicitly turn on mic after speaking
                     if(state.isPlaying) speak(speechQ, true);
                 }, 400);
@@ -1155,63 +1328,9 @@
         // ("vierundzwanzig", "einhundertvierundvierzig"). The old parser only
         // knew the single words 0-12, so most voice answers above 12 failed.
         function parseSpokenNumber(raw) {
-            if (raw === null || raw === undefined) return null;
-            const digitMatch = String(raw).replace(/,/g, '').match(/\d+/);
-            if (digitMatch) return parseInt(digitMatch[0], 10);
-
-            const text = String(raw).toLowerCase().trim()
-                .replace(/\bthe answer is\b/g, ' ').replace(/\bdie antwort ist\b/g, ' ')
-                .replace(/\bist\b/g, ' ').replace(/\bis\b/g, ' ');
-
-            const enOnes = {zero:0, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19};
-            const enTens = {twenty:20, thirty:30, forty:40, fifty:50, sixty:60, seventy:70, eighty:80, ninety:90};
-            const deOnes = {null:0, eins:1, ein:1, zwei:2, drei:3, vier:4, fuenf:5, fünf:5, sechs:6, sieben:7, acht:8, neun:9, zehn:10, elf:11, zwoelf:12, zwölf:12, dreizehn:13, vierzehn:14, fuenfzehn:15, fünfzehn:15, sechzehn:16, siebzehn:17, achtzehn:18, neunzehn:19};
-            const deTens = {zwanzig:20, dreissig:30, dreißig:30, vierzig:40, fuenfzig:50, fünfzig:50, sechzig:60, siebzig:70, achtzig:80, neunzig:90};
-
-            // German compound in a single token, e.g. "einundzwanzig",
-            // "einhundertvierundvierzig", "hundertacht".
-            function parseGermanCompound(w) {
-                let rest = w, total = 0;
-                const hIdx = rest.indexOf('hundert');
-                if (hIdx >= 0) {
-                    const before = rest.slice(0, hIdx);
-                    total += (before && deOnes[before] !== undefined ? deOnes[before] : 1) * 100;
-                    rest = rest.slice(hIdx + 'hundert'.length);
-                    if (!rest) return total;
-                }
-                if (deTens[rest] !== undefined) return total + deTens[rest];
-                if (deOnes[rest] !== undefined) return total + deOnes[rest];
-                const undIdx = rest.indexOf('und');
-                if (undIdx > 0) {
-                    const onesPart = rest.slice(0, undIdx);
-                    const tensPart = rest.slice(undIdx + 3);
-                    if (deOnes[onesPart] !== undefined && deTens[tensPart] !== undefined) {
-                        return total + deOnes[onesPart] + deTens[tensPart];
-                    }
-                }
-                return null;
-            }
-
-            const tokens = text.split(/[\s-]+/).filter(Boolean);
-
-            // Try each token / token pair (phrases like "answer twenty four").
-            for (let i = 0; i < tokens.length; i++) {
-                const w = tokens[i];
-                const g = parseGermanCompound(w);
-                if (g !== null) return g;
-                if (enOnes[w] !== undefined || enTens[w] !== undefined) {
-                    // English sequence: [hundreds] [tens] [ones]
-                    let val = 0, j = i, used = false;
-                    if (enOnes[tokens[j]] !== undefined && tokens[j + 1] === 'hundred') {
-                        val += enOnes[tokens[j]] * 100; j += 2; used = true;
-                        if (tokens[j] === 'and') j++;
-                    }
-                    if (enTens[tokens[j]] !== undefined) { val += enTens[tokens[j]]; j++; used = true; }
-                    if (enOnes[tokens[j]] !== undefined) { val += enOnes[tokens[j]]; j++; used = true; }
-                    if (used) return val;
-                }
-            }
-            return null;
+            if (typeof raw !== 'string') return null;
+            const text = raw.trim().replace(/^(?:the answer is|die antwort ist)\s+/i, '');
+            return window.parseAnswer(text, state.language);
         }
 
         function processVoiceInput(text) {
@@ -1227,12 +1346,17 @@
         }
 
         function checkAnswer(isKeypad, val = null) {
-            if(!state.isPlaying || state.answerLocked) return;
+            if(!state.isPlaying || state.paused || state.answerLocked) return;
+            if (state.mode === 'test' && state.testType === 'time') {
+                tickTimer();
+                if (!state.isPlaying) return;
+            }
             const userAns = isKeypad ? parseInt(state.keypadInput) : val;
             // Empty keypad OK tap / unparseable input is not an answer: the old
             // code scored it as a miss and counted the question.
-            if (userAns === null || userAns === undefined || isNaN(userAns)) return;
+            if (!Number.isInteger(userAns) || userAns < 0 || userAns > 999) return;
             state.answerLocked = true;
+            updateAnswerControls();
             micRequestStop();
             if (userAns === state.currentQ.ans) {
                 handleCorrect();
@@ -1261,7 +1385,7 @@
             
             const delay = (state.mode === 'test' && state.testType === 'time') ? 600 : 1500;
 
-            setTimeout(() => {
+            schedule(() => {
                 if(!state.isPlaying) return;
                 mascot.innerText = "🛸"; 
                 mascot.classList.remove('bounce');
@@ -1275,7 +1399,7 @@
             state.questionsCount++;
             updateScore();
             
-            if (!state.mistakesQueue.some(m => m.n1 === state.currentQ.rawN1 && m.n2 === state.currentQ.rawN2)) {
+            if (state.mode === 'practice' && !state.mistakesQueue.some(m => m.n1 === state.currentQ.rawN1 && m.n2 === state.currentQ.rawN2)) {
                 state.mistakesQueue.push({
                     n1: state.currentQ.rawN1,
                     n2: state.currentQ.rawN2
@@ -1299,19 +1423,21 @@
 
             const delay = (state.mode === 'test' && state.testType === 'time') ? 800 : 2000;
 
-            setTimeout(() => {
+            schedule(() => {
                 if(!state.isPlaying) return;
                 nextQuestion();
             }, delay);
         }
 
         function endGame() {
-            if (state.gameEnded) return;
+            if (!state.isPlaying || state.gameEnded) return;
             state.gameEnded = true;
             state.isPlaying = false;
-            clearInterval(state.timer);
-            micRequestStop();
+            state.paused = false;
+            state.session++;
+            cancelActivity();
             closeKeypad();
+            document.body.classList.remove('game-active');
 
             document.getElementById('gameArea').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.remove('hidden');
@@ -1351,6 +1477,9 @@
             }
 
             const t = i18n[state.language];
+            const rankIds = ['pilot', 'commander', 'legend', 'navigator', 'supernova', 'master'];
+            rank = t.ranks[rankIds.filter(id => state.score >= ({pilot:200,commander:500,legend:1000,navigator:1500,supernova:2000,master:3000})[id]).length];
+            updateStorageNotice();
             const rankEl = document.getElementById('rankTitle');
             rankEl.innerText = t.rank + " " + rank;
             rankEl.className = "text-xl font-bold mb-2 " + color;
@@ -1370,6 +1499,13 @@
         }
 
         function resetToMenu() {
+            state.isPlaying = false;
+            state.paused = false;
+            state.session++;
+            cancelActivity();
+            document.body.classList.remove('game-active');
+            document.getElementById('pauseScreen').classList.add('hidden');
+            document.getElementById('gameArea').classList.add('hidden');
             micRequestStop();
             closeKeypad();
             if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
@@ -1385,14 +1521,7 @@
         }
 
         function quitGame() {
-            state.isPlaying = false;
-            clearInterval(state.timer);
-            micRequestStop();
-            closeKeypad();
-            if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
-            document.getElementById('gameArea').classList.add('hidden');
-            document.getElementById('gameArea').classList.remove('flex');
-            document.getElementById('startScreen').classList.remove('hidden');
+            resetToMenu();
         }
 
         // --- UI Helper Functions ---
@@ -1413,33 +1542,28 @@
             b.classList.remove('opacity-0');
             b.style.top = '-80px';
             if (state.bubbleTimer) clearTimeout(state.bubbleTimer);
-            state.bubbleTimer = setTimeout(() => {
+            state.bubbleTimer = schedule(() => {
                 b.classList.add('opacity-0');
                 b.style.top = '-60px';
             }, duration);
         }
 
         function openKeypad() {
+            if (!state.isPlaying || state.paused) return;
             const keypad = document.getElementById('keypad');
-            const btn = document.getElementById('toggleKeypadBtn');
-            const t = i18n[state.language];
-            keypad.classList.remove('hidden');
-            // Next frame so the slide-up transition actually runs
-            requestAnimationFrame(() => requestAnimationFrame(() => keypad.classList.remove('translate-y-full')));
-            if (btn) btn.innerText = t.closeKeypad;
+            keypad.classList.remove('hidden', 'translate-y-full');
+            document.getElementById('toggleKeypadBtn').innerText = i18n[state.language].useVoice;
+            document.getElementById('btnCloseKeypad').classList.toggle('hidden', !state.voiceSupported);
             document.body.classList.add('keypad-open');
             state.usingKeypad = true;
+            state.preferredInput = 'keypad';
             micRequestStop();
+            saveSettings();
         }
 
         function closeKeypad() {
-            const keypad = document.getElementById('keypad');
-            if (keypad.classList.contains('hidden')) { state.usingKeypad = false; document.body.classList.remove('keypad-open'); return; }
-            const btn = document.getElementById('toggleKeypadBtn');
-            const t = i18n[state.language];
-            keypad.classList.add('translate-y-full');
-            setTimeout(() => keypad.classList.add('hidden'), 300);
-            if (btn) btn.innerText = t.keypad;
+            document.getElementById('keypad').classList.add('hidden', 'translate-y-full');
+            document.getElementById('toggleKeypadBtn').innerText = i18n[state.language].keypad;
             document.body.classList.remove('keypad-open');
             state.usingKeypad = false;
         }
@@ -1452,6 +1576,8 @@
                 openKeypad();
             } else {
                 closeKeypad();
+                state.preferredInput = 'voice';
+                saveSettings();
                 // Back to voice: re-ask the current question so the mic reopens
                 // after TTS finishes, exactly like a fresh question.
                 if (state.isPlaying && state.voiceSupported && !state.answerLocked) {
@@ -1461,19 +1587,21 @@
         }
 
         function addKey(num) {
-            if (state.keypadInput.length < 3) {
+            if (state.isPlaying && !state.paused && !state.answerLocked && /^\d$/.test(String(num)) && state.keypadInput.length < 3) {
                 state.keypadInput += num;
                 document.getElementById('userAnswerDisplay').innerText = state.keypadInput;
             }
         }
 
         function backspaceKey() {
+            if (!state.isPlaying || state.paused || state.answerLocked) return;
             // The button shows a backspace icon; the old handler wiped the
             // whole entry. Delete one digit, as the icon promises.
             state.keypadInput = state.keypadInput.slice(0, -1);
             document.getElementById('userAnswerDisplay').innerText = state.keypadInput;
         }
         function clearKey() {
+            if (!state.isPlaying || state.paused || state.answerLocked) return;
             state.keypadInput = "";
             document.getElementById('userAnswerDisplay').innerText = "";
         }
@@ -1485,6 +1613,11 @@
         if (synth) { refreshVoices(); if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = refreshVoices; }
 
         function speak(text, autoListen = false) {
+            const epoch = ++state.speechEpoch;
+            const session = state.session;
+            const questionId = state.questionId;
+            const valid = () => epoch === state.speechEpoch && session === state.session && questionId === state.questionId;
+            if (!state.sound || !window.SpeechSynthesisUtterance || !synth) { if (autoListen) micRequestStart('auto'); return; }
             if (!synth) { if (autoListen) micRequestStart('auto'); return; }
             // The mic must never hear the game itself: pause it while talking,
             // and remember whether it wanted to be on.
@@ -1515,7 +1648,7 @@
             state.speaking = true;
             let finished = false;
             const finish = () => {
-                if (finished) return;
+                if (finished || !valid()) return;
                 finished = true;
                 state.speaking = false;
                 if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
@@ -1527,12 +1660,13 @@
             // cancel()), do not leave the mic blocked forever - but tie the
             // fallback to THIS utterance and cancel it when a new speak() or
             // question supersedes it, so it cannot open the mic mid-next-question.
-            state.speechTimer = setTimeout(() => {
+            state.speechTimer = schedule(() => {
+                if (!valid()) return;
                 state.speechTimer = null;
                 state.speaking = false;
                 if (autoListen || resumeMic) micRequestStart('auto');
             }, Math.min(7000, 1500 + text.length * 120));
-            synth.speak(utter);
+            try { synth.speak(utter); } catch { finish(); }
         }
 
         // One shared AudioContext. The old code created a fresh context per
@@ -1540,15 +1674,17 @@
         // 'suspended' and stays silent. unlockAudio() runs in the Start tap.
         let audioCtx = null;
         function unlockAudio() {
+            if (!state.sound) return;
             try {
                 const AC = window.AudioContext || window.webkitAudioContext;
                 if (!AC) return;
                 if (!audioCtx) audioCtx = new AC();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
             } catch (e) {}
         }
 
         function playSound(success) {
+            if (!state.sound) return;
             unlockAudio();
             if (!audioCtx) return;
             try {
@@ -1557,6 +1693,7 @@
                 const gain = ctx.createGain();
                 osc.connect(gain);
                 gain.connect(ctx.destination);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
                 if (success) {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(500, ctx.currentTime);
@@ -1600,14 +1737,17 @@
         // Physical keyboard entry (desktop / iPad with keyboard): digits type,
         // Backspace deletes, Enter submits - when the keypad is the input mode.
         document.addEventListener('keydown', (e) => {
-            if (!state.isPlaying) return;
+            if (!state.isPlaying || state.paused || state.answerLocked || e.ctrlKey || e.metaKey || e.altKey) return;
             if (/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
                 if (!state.usingKeypad) openKeypad();
                 addKey(parseInt(e.key, 10));
             } else if (e.key === 'Backspace' && state.usingKeypad) {
                 e.preventDefault();
                 backspaceKey();
-            } else if (e.key === 'Enter' && state.usingKeypad) {
+            } else if (e.key === 'Enter' && state.usingKeypad &&
+                (!(e.target instanceof HTMLButtonElement) || e.target.closest('#keypad'))) {
+                e.preventDefault();
                 checkAnswer(true);
             }
         });
@@ -1623,10 +1763,20 @@
             }
         })();
         document.getElementById('toggleKeypadBtn').addEventListener('click', () => toggleKeypad());
-        window.speechSynthesis.getVoices();
+        if (window.speechSynthesis) window.speechSynthesis.getVoices();
         
         // Initial load
         loadBadges();
+        loadSettings();
+        updateTexts();
+        setMode(state.mode);
+        setOperation(state.operation);
+        setTestType(state.testType);
+        for (const btn of document.querySelectorAll('.num-toggle')) {
+            const selected = state.practiceNums.includes(Number(btn.innerText));
+            btn.classList.toggle('selected', selected);
+            btn.setAttribute('aria-pressed', String(selected));
+        }
 
     </script>
 </body>

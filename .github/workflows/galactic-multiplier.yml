@@ -1,0 +1,46 @@
+name: Galactic Multiplier checks
+on:
+  pull_request:
+    paths:
+      - 'galactic-multiplier/**'
+      - '.github/workflows/galactic-multiplier.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'galactic-multiplier/**'
+      - '.github/workflows/galactic-multiplier.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test galactic-multiplier/tests/*.test.cjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.58.0
+      - run: python -m playwright install --with-deps ${{ matrix.browser }}
+      - run: python galactic-multiplier/tests/browser_test.py
+        env:
+          BROWSER: ${{ matrix.browser }}
+          SCREENSHOT_DIR: screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: galactic-${{ matrix.browser }}-screenshots
+          path: screenshots

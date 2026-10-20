@@ -1,83 +1,77 @@
-// Galactic Multiplier service worker.
-// v10: the old worker precached CDN URLs with cache.addAll() (one failed URL
-// killed the whole install) and then served index.html cache-first forever,
-// so installed users never received updates. Now: local assets only,
-// per-asset install, network-first for the page, cache-first for assets,
-// and old caches are deleted on activate.
-const CACHE_NAME = 'galactic-multiplier-v12';
+const CACHE_NAME = 'galactic-multiplier-v13';
+const CACHE_PREFIX = 'galactic-multiplier-';
 const ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './fonts.css',
-  './fonts/fredoka-300-latin.woff2',
-  './fonts/fredoka-400-latin.woff2',
-  './fonts/fredoka-600-latin.woff2',
-  './fonts/fredoka-300-latin-ext.woff2',
-  './fonts/fredoka-400-latin-ext.woff2',
-  './fonts/fredoka-600-latin-ext.woff2',
-  './fonts/press-start-2p-400-latin.woff2',
-  './fonts/press-start-2p-400-latin-ext.woff2',
-  './vendor/fontawesome/css/all.min.css',
-  './vendor/fontawesome/webfonts/fa-solid-900.woff2',
-  './vendor/fontawesome/webfonts/fa-regular-400.woff2',
-  './manifest.json',
-  './icon.png',
-  './favicon.ico',
-  './apple-touch-icon-180.png',
-  './icon-192.png'
+  "./index.html",
+  "./style.css",
+  "./fixes.css",
+  "./numbers.js",
+  "./fonts.css",
+  "./manifest.json",
+  "./icon.png",
+  "./favicon.ico",
+  "./apple-touch-icon-180.png",
+  "./icon-192.png",
+  "./icon-maskable.png",
+  "./fonts/fredoka-300-latin.woff2",
+  "./fonts/fredoka-400-latin.woff2",
+  "./fonts/fredoka-600-latin.woff2",
+  "./fonts/fredoka-300-latin-ext.woff2",
+  "./fonts/fredoka-400-latin-ext.woff2",
+  "./fonts/fredoka-600-latin-ext.woff2",
+  "./fonts/press-start-2p-400-latin.woff2",
+  "./fonts/press-start-2p-400-latin-ext.woff2",
+  "./vendor/fontawesome/css/all.min.css",
+  "./vendor/fontawesome/webfonts/fa-solid-900.woff2",
+  "./vendor/fontawesome/webfonts/fa-regular-400.woff2"
 ];
+const SHELL_URL = new URL('./index.html', self.registration.scope).href;
+const ASSET_URLS = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => Promise.allSettled(ASSETS.map((url) => cache.add(url))))
-      .then(() => self.skipWaiting())
-  );
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    // Install only a complete shell. Third-party outages cannot block this.
+    await cache.addAll(ASSETS.map(path => new Request(new URL(path, self.registration.scope), { cache: 'reload' })));
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    // Other games share this origin; never delete their caches.
+    await Promise.all(names.filter(name => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME).map(name => caches.delete(name)));
+    await self.clients.claim();
+  })());
 });
 
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
+async function networkFirst(request, navigation) {
+  let cache;
+  try { cache = await caches.open(CACHE_NAME); }
+  catch { return fetch(request); } // Disabled storage must not break the online game.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
+  try {
+    const response = await fetch(request, { signal: controller.signal, cache: 'no-cache' });
+    if (!response.ok) throw new Error('Asset unavailable');
+    // Store canonical shell navigation so /, /index.html, and query strings work offline.
+    try { await cache.put(navigation ? SHELL_URL : request.url, response.clone()); }
+    catch { /* Quota or private-browsing restrictions must not discard a good response. */ }
+    return response;
+  } catch {
+    const cached = await cache.match(navigation ? SHELL_URL : request.url).catch(() => undefined);
+    return cached || new Response('Galactic Multiplier is unavailable offline. Connect once to install it.', {
+      status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  } finally { clearTimeout(timeout); }
+}
 
-  const isPage = request.mode === 'navigate' ||
-    request.url.endsWith('/') || request.url.endsWith('index.html');
-
-  if (isPage) {
-    // Network-first so fixes actually reach installed users.
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
-          return response;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
-
-  // Static assets: cache-first, refreshed in the background.
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  const navigation = event.request.mode === 'navigate' &&
+    (url.pathname === new URL(self.registration.scope).pathname || url.pathname === new URL(SHELL_URL).pathname);
+  if (!navigation && !ASSET_URLS.has(url.href)) return;
+  event.respondWith(networkFirst(event.request, navigation));
 });
+

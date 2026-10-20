@@ -23,7 +23,10 @@ All speech-recognition start/stop goes through one state machine in `index.html`
 
 ## Platform notes
 
-- **iOS Safari has no SpeechRecognition** — the game detects this and uses the keypad as the primary input (mic button hidden). Keep that fallback intact.
+- Voice support varies by Safari/iOS version, permissions, and speech services. Feature detection selects the fallback; keypad is the default and remains available.
 - Speech synthesis on iOS only fires `onend` reliably if the handler is attached *before* `speak()` is called; `speak()` also has a timed fallback so a question can never stall waiting for the mic.
 - Layout uses `100dvh` + `env(safe-area-inset-*)`; don't go back to plain `h-screen` (iOS Safari's toolbar makes 100vh taller than the visible screen).
 - The service worker is network-first for the page so installed users actually receive fixes; bump `CACHE_NAME` in `service-worker.js` when changing cached assets.
+
+
+See [October 19 changes and validation](UPDATE.md) for the integrated review fixes.

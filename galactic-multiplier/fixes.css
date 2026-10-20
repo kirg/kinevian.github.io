@@ -1,0 +1,41 @@
+/* Layout and accessibility fixes layered over the existing compiled theme. */
+body { height: auto; min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+body.game-active { min-height: 100dvh; }
+body > * { flex-shrink: 0; }
+.screen-overlay { position: fixed; inset: 0; overflow-y: auto; padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
+.screen-overlay > * { flex-shrink: 0; }
+#langBtn, #installBtn { top: max(16px, env(safe-area-inset-top)); }
+#startScreen > .text-center { margin-top: 60px; }
+#appTitle { font-size: clamp(1rem, 5vw, 1.875rem); overflow-wrap: anywhere; }
+#gameArea { flex: 1 0 auto; padding: 24px 0 8px; min-width: 0; }
+#questionBox { max-width: 100%; gap: 12px; padding: 12px; font-size: clamp(2rem, 10vw, 3.75rem); }
+#questionBox > #operatorSign { font-size: .7em; }
+#speechBubble { position: static; transform: none; white-space: normal; text-align: center; max-width: min(85vw, 360px); font-size: 1rem; padding: 4px 12px; border-width: 2px; margin-top: 8px; }
+#gameControls { gap: 8px; }
+#gameControls button { min-height: 44px; padding: 6px 12px; }
+#keypad { position: relative; bottom: auto; left: auto; flex-shrink: 0; transform: none !important; max-width: 448px; border-radius: 24px; padding: 12px !important; margin-bottom: 12px; }
+#keypad .grid { gap: 8px; }
+#keypad .key-btn { min-height: 44px; height: 48px; }
+#btnCloseKeypad { min-height: 44px; margin-top: 4px; color: #cbd5e1; }
+body.keypad-open #gameArea { padding-bottom: 8px; }
+body.keypad-open #micBtn, body.keypad-open #micStatus, body.keypad-open #heardText { display: none; }
+body.keypad-open #gameArea > .mb-6 { margin-bottom: 8px; }
+body.keypad-open #mascot { font-size: 2rem; }
+body.keypad-open #gameArea > .mb-8 { margin-bottom: 8px; }
+body.keypad-open #gameArea > .h-16 { height: 48px; margin-bottom: 8px; }
+#btnAbort { color: #fca5a5; }
+.num-toggle { width: 44px; height: 44px; }
+.badge-grid { max-height: none; flex: 0 0 auto; }
+.badge-title, .badge-pts { overflow-wrap: anywhere; }
+.badge-slot:not(.earned) .badge-title, .badge-slot:not(.earned) .badge-pts { color: #cbd5e1; }
+.storage-notice { color: #fde68a; text-align: center; font-size: .85rem; max-width: 384px; }
+.storage-notice:empty { display: none; }
+button:disabled { opacity: .55; cursor: default; }
+@media (orientation: landscape) and (max-height: 500px) {
+  body.game-active.keypad-open { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start; gap: 12px; }
+  body.game-active.keypad-open > .relative { grid-column: 1 / -1; justify-self: center; }
+  body.game-active.keypad-open #gameArea { grid-column: 1; grid-row: 2; padding-top: 0; }
+  body.game-active.keypad-open #keypad { grid-column: 2; grid-row: 2; width: 100%; justify-self: center; }
+  body.game-active.keypad-open #gameArea > .mb-6, body.game-active.keypad-open #lblWhatIs { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
