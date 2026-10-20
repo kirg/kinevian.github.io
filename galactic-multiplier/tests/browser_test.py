@@ -1,6 +1,8 @@
 """Run with Playwright against the real HTML; speech services are mocked."""
 import functools
+import base64
 import os
+import re
 import socket
 from pathlib import Path
 import threading
@@ -62,6 +64,7 @@ class BrowserChecks(unittest.TestCase):
         self.page.on("request", lambda request: self.external.append(request.url) if not request.url.startswith("http://127.0.0.1") else None)
         self.page.goto(self.url)
         self.page.locator("#numGrid button").first.wait_for()
+        self.page.evaluate("document.fonts.ready")
         self.page.locator("#soundToggle").uncheck()
 
     def tearDown(self):
@@ -71,6 +74,86 @@ class BrowserChecks(unittest.TestCase):
 
     def assert_no_overflow(self):
         self.assertTrue(self.page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
+
+    def capture_preview(self, name):
+        directory = Path(os.environ.get("SCREENSHOT_DIR", "/tmp/galactic-screenshots"))
+        directory.mkdir(parents=True, exist_ok=True)
+        engine = os.environ.get("BROWSER", "chromium")
+        preview = self.page.screenshot(type="jpeg", quality=45, full_page=False)
+        (directory / (engine + "-" + name + ".jpg")).write_bytes(preview)
+        # Optional log previews are useful when an artifact downloader is unavailable.
+        if os.environ.get("CAPTURE_PREVIEWS") == "1" and name in {"title-en", "question-reduced", "answer-small"}:
+            print("VISUAL_PREVIEW:" + engine + "-" + name + ":" + base64.b64encode(preview).decode(), flush=True)
+
+    def assert_in_viewport(self, selector):
+        box = self.page.locator(selector).bounding_box()
+        self.assertIsNotNone(box, selector)
+        viewport = self.page.viewport_size
+        self.assertGreaterEqual(box["y"], -1, selector)
+        self.assertLessEqual(box["y"] + box["height"], viewport["height"] + 1, selector)
+        self.assertGreaterEqual(box["x"], -1, selector)
+        self.assertLessEqual(box["x"] + box["width"], viewport["width"] + 1, selector)
+
+    def test_question_visible_without_animation(self):
+        for mode in ["reduced", "paused"]:
+            with self.subTest(mode=mode):
+                self.page.emulate_media(reduced_motion="reduce" if mode == "reduced" else "no-preference")
+                if mode == "paused":
+                    self.page.add_style_tag(content=".pop-in {animation-play-state:paused !important;animation-duration:1000s !important}")
+                self.page.evaluate("startGame()")
+                self.page.wait_for_timeout(150)
+                self.capture_preview("question-" + mode)
+                for selector in ["#num1", "#num2"]:
+                    appearance = self.page.locator(selector).evaluate("""el => ({
+                        text:el.textContent, opacity:Number(getComputedStyle(el).opacity),
+                        visibility:getComputedStyle(el).visibility
+                    })""")
+                    self.assertRegex(appearance["text"], r"^\d+$")
+                    self.assertEqual(appearance["opacity"], 1, selector + " must not depend on animation to become visible")
+                    self.assertEqual(appearance["visibility"], "visible")
+                self.page.evaluate("quitGame()")
+
+    def test_title_has_readable_fill(self):
+        for language in ["en", "de"]:
+            with self.subTest(language=language):
+                if language == "de":
+                    self.page.locator("#langBtn").click()
+                self.capture_preview("title-" + language)
+                style = self.page.locator("#appTitle").evaluate("""el => {
+                    const s=getComputedStyle(el);
+                    return {color:s.getPropertyValue('-webkit-text-fill-color') || s.color, shadow:s.textShadow};
+                }""")
+                channels = [float(n) for n in re.findall(r"[\d.]+", style["color"])]
+                self.assertGreaterEqual(channels[3] if len(channels) == 4 else 1, .99, "Title needs solid letter fill")
+                def luminance(rgb):
+                    values = [v / 255 for v in rgb[:3]]
+                    values = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in values]
+                    return sum(a * b for a, b in zip(values, [.2126, .7152, .0722]))
+                self.assertGreaterEqual((luminance(channels) + .05) / (luminance([15,23,42]) + .05), 4.5)
+                shadow_pixels = [float(n) for n in re.findall(r"(-?[\d.]+)px", style["shadow"])]
+                self.assertLessEqual(max(shadow_pixels, default=0), 8, "Glow must not overwhelm letter edges")
+
+    def test_answer_stays_visible_when_submitting_from_keypad(self):
+        self.page.clock.install()
+        for width, height in [(320,568), (390,664), (844,390)]:
+            with self.subTest(width=width,height=height):
+                self.page.set_viewport_size({"width":width,"height":height})
+                self.page.evaluate("state.practiceNums=[12]; startGame(); state.lastQuestionKey=null; Math.random=()=>.999; nextQuestion()")
+                self.assertEqual(self.page.evaluate("state.currentQ.ans"), 144)
+                for digit in [1,4,4]:
+                    self.page.locator('#keypad button[onclick="addKey(' + str(digit) + ')"]').tap()
+                self.page.locator('#keypad button[onclick="checkAnswer(true)"]').tap()
+                if width == 320:
+                    self.capture_preview("answer-small")
+                self.assertEqual(self.page.locator("#userAnswerDisplay").inner_text(), "144")
+                self.assertEqual(self.page.locator("#scoreDisplay").inner_text(), "10")
+                self.assert_in_viewport("#questionBox")
+                self.assert_in_viewport("#userAnswerDisplay")
+                answer = self.page.locator("#userAnswerDisplay").bounding_box()
+                keypad = self.page.locator("#keypad").bounding_box()
+                if height > width:
+                    self.assertLessEqual(answer["y"] + answer["height"], keypad["y"])
+                self.page.evaluate("quitGame()")
 
     def test_mobile_layout_and_touch(self):
         directory = Path(os.environ.get("SCREENSHOT_DIR", "/tmp/galactic-screenshots"))
