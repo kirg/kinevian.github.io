@@ -1,4 +1,4 @@
-const CACHE_NAME = 'galactic-multiplier-v13';
+const CACHE_NAME = 'galactic-multiplier-v14';
 const CACHE_PREFIX = 'galactic-multiplier-';
 const ASSETS = [
   "./index.html",
@@ -74,4 +74,5 @@ self.addEventListener('fetch', event => {
   if (!navigation && !ASSET_URLS.has(url.href)) return;
   event.respondWith(networkFirst(event.request, navigation));
 });
+
 

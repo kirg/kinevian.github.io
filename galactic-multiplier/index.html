@@ -522,10 +522,21 @@
             }
         };
 
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
         // --- PWA Service Worker Registration ---
+        let appUpdateReady = false;
         if ('serviceWorker' in navigator) {
+            let wasControlled = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!wasControlled) { wasControlled = true; return; }
+                appUpdateReady = true;
+                // Keep an active mission intact; returning to base applies the update.
+                if (!state.isPlaying) window.location.reload();
+            });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
+                navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
                     .then(reg => console.log('Service Worker registered'))
                     .catch(err => console.log('Service Worker failed', err));
             });
@@ -605,9 +616,11 @@
             micRetryHint: false,
             micPermission: 'unknown', // unknown | granted | denied
             micStartTimer: null,
+            micWatchdog: null,
             micResumeWanted: false,
             speaking: false,
             speechTimer: null,
+            activeUtterance: null,
             language: 'en-US',
             session: 0, questionId: 0, pendingTimers: new Set(), speechEpoch: 0,
             paused: false, remainingMs: 60000, storageAvailable: true, sound: true, preferredInput: 'keypad'
@@ -626,6 +639,7 @@
         function cancelSpeech() {
             state.speechEpoch++;
             state.speaking = false;
+            state.activeUtterance = null;
             if (state.speechTimer) clearTimeout(state.speechTimer);
             state.speechTimer = null;
             try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch {}
@@ -680,6 +694,7 @@
         function resumeGame() {
             if (!state.paused || !state.isPlaying) return;
             state.paused = false;
+            unlockAudio();
             document.getElementById('pauseScreen').classList.add('hidden');
             if (state.resumeKeypad) openKeypad();
             if (state.answerLocked) nextQuestion();
@@ -917,26 +932,57 @@
 
         function micRequestStart(source) {
             if (!recognition) return;
+            // Safari may require a fresh tap for each recognition session.
+            // Do not reopen it from TTS callbacks or silence/retry timers on iOS.
+            if (isIOS && source !== 'user') { renderMic(); return; }
             if (!canListen()) return;
             if (state.micPermission === 'denied' && source === 'auto') { state.micState = 'blocked'; renderMic(); return; }
             if (state.micState === 'starting' || state.micState === 'listening') return;
-            if (state.micState === 'stopping') { state.micPendingStart = true; state.micIntent = true; return; }
+            if (state.micState === 'stopping') {
+                if (isIOS && source === 'user') {
+                    // Recreate synchronously so this tap isn't lost waiting for Safari's onend.
+                    disposeRecognition();
+                    state.micState = 'off';
+                    initializeRecognition();
+                } else { state.micPendingStart = true; state.micIntent = true; return; }
+            }
             state.micIntent = true;
             state.micRetryHint = false;
             state.micState = 'starting';
             renderMic();
+            clearTimeout(state.micWatchdog);
+            state.micWatchdog = schedule(() => {
+                state.micWatchdog = null;
+                if (state.micState === 'starting') micFailed('timeout');
+            }, 10000);
             try {
                 recognition.start();
             } catch (e) {
-                // Browser says it is already running; our state was stale.
-                state.micState = 'listening';
-                renderMic();
+                micFailed(e.name === 'NotAllowedError' || e.name === 'SecurityError' ? 'not-allowed' : 'start-failed');
             }
+        }
+
+        function micFailed(error) {
+            clearTimeout(state.micWatchdog);
+            state.micWatchdog = null;
+            state.micIntent = false;
+            state.micPendingStart = false;
+            const denied = ['not-allowed', 'service-not-allowed', 'audio-capture'].includes(error);
+            if (denied) state.micPermission = 'denied';
+            state.micState = denied ? 'blocked' : 'off';
+            state.micRetryHint = !denied;
+            try { recognition?.abort(); } catch {}
+            renderMic();
+            if (state.isPlaying && !state.usingKeypad) openKeypad();
+            const t = i18n[state.language];
+            if (state.isPlaying) showBubble(denied ? t.micDenied : error === 'network' ? t.micNetwork : t.micRetry, 2500);
         }
 
         function micRequestStop() {
             state.micIntent = false;
             state.micPendingStart = false;
+            clearTimeout(state.micWatchdog);
+            state.micWatchdog = null;
             if (state.micStartTimer) { clearTimeout(state.micStartTimer); state.micStartTimer = null; }
             clearHeard();
             if (!recognition) return;
@@ -977,6 +1023,8 @@
             recognition.interimResults = true; // live feedback while the child speaks
             recognition.maxAlternatives = 3;
             state.voiceSupported = true;
+            const owner = recognition;
+            const session = state.session;
 
             // Know the permission state up front: after a denial the game must
             // stop auto-opening the mic (that loop felt like it opening and
@@ -984,9 +1032,11 @@
             try {
                 if (navigator.permissions && navigator.permissions.query) {
                     navigator.permissions.query({ name: 'microphone' }).then((ps) => {
+                        if (recognition !== owner || session !== state.session) return;
                         state.micPermission = ps.state === 'granted' ? 'granted' : (ps.state === 'denied' ? 'denied' : 'unknown');
                         if (ps.state === 'denied') { state.micState = 'blocked'; renderMic(); }
                         ps.onchange = () => {
+                            if (recognition !== owner || session !== state.session) return;
                             state.micPermission = ps.state === 'granted' ? 'granted' : (ps.state === 'denied' ? 'denied' : 'unknown');
                             if (state.micPermission === 'denied') { state.micIntent = false; state.micState = 'blocked'; renderMic(); }
                         };
@@ -995,12 +1045,16 @@
             } catch (e) {}
 
             recognition.onstart = () => {
+                clearTimeout(state.micWatchdog);
+                state.micWatchdog = null;
                 if (!canListen() || !state.micIntent) { micRequestStop(); return; }
                 state.micState = 'listening';
                 renderMic();
             };
 
             recognition.onend = () => {
+                clearTimeout(state.micWatchdog);
+                state.micWatchdog = null;
                 if (state.micPendingStart && state.micIntent && canListen()) {
                     state.micPendingStart = false;
                     state.micState = 'off';
@@ -1008,7 +1062,7 @@
                     return;
                 }
                 state.micPendingStart = false;
-                if (state.micIntent && canListen() && state.micRestarts < MAX_MIC_RESTARTS) {
+                if (!isIOS && state.micIntent && canListen() && state.micRestarts < MAX_MIC_RESTARTS) {
                     // Chrome ends the session after a pause or a result; reopen
                     // it a bounded number of times per question, with a beat in
                     // between instead of a synchronous restart storm.
@@ -1057,26 +1111,11 @@
 
             recognition.onerror = (event) => {
                 const err = event.error;
-                if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture') {
-                    state.micPermission = 'denied';
-                    state.micIntent = false;
-                    state.micState = 'blocked';
-                    renderMic();
-                    showBubble(i18n[state.language].micDenied, 2500);
-                    if (state.isPlaying && !state.usingKeypad) openKeypad();
-                } else if (err === 'network') {
-                    // Chrome's recognizer needs its online service; offline it
-                    // used to fail silently into the same limbo.
-                    state.micIntent = false;
-                    state.micState = 'off';
-                    renderMic();
-                    showBubble(i18n[state.language].micNetwork, 2500);
-                    if (state.isPlaying && !state.usingKeypad) openKeypad();
+                if (['not-allowed', 'service-not-allowed', 'audio-capture', 'network', 'language-not-supported'].includes(err)) {
+                    micFailed(err);
                 }
                 // 'no-speech' / 'aborted': onend owns the follow-up.
             };
-            const owner = recognition;
-            const session = state.session;
             for (const name of ['onstart', 'onend', 'onresult', 'onerror']) {
                 const callback = owner[name];
                 owner[name] = event => { if (recognition === owner && session === state.session) callback(event); };
@@ -1225,7 +1264,7 @@
             else if (state.micState === 'blocked') { openKeypad(); } // permission already denied: don't make the player discover the keypad link first
 
             updateScore();
-            nextQuestion();
+            nextQuestion(true);
         }
 
         function startTimer() {
@@ -1235,7 +1274,7 @@
             state.timer = setInterval(tickTimer, 100);
         }
 
-        function nextQuestion() {
+        function nextQuestion(fromGesture = false) {
             if(!state.isPlaying || state.paused) return;
             cancelQuestionActivity();
             state.questionId++;
@@ -1318,10 +1357,9 @@
                     schedule(() => { if(state.isPlaying) micRequestStart('auto'); }, 400);
                 }
             } else {
-                schedule(() => {
-                    // Changed: Pass true to explicitly turn on mic after speaking
-                    if(state.isPlaying) speak(speechQ, true);
-                }, 400);
+                // The first utterance must run inside the Start tap on Safari.
+                if (fromGesture) speak(speechQ, true);
+                else schedule(() => { if (state.isPlaying) speak(speechQ, true); }, 400);
             }
         }
 
@@ -1521,6 +1559,7 @@
                 <i class="fa-regular fa-star text-yellow-500/30"></i>
             `;
             document.getElementById('statusValue').classList.remove('text-red-400');
+            if (appUpdateReady) window.location.reload();
         }
 
         function quitGame() {
@@ -1584,7 +1623,11 @@
                 // Back to voice: re-ask the current question so the mic reopens
                 // after TTS finishes, exactly like a fresh question.
                 if (state.isPlaying && state.voiceSupported && !state.answerLocked) {
-                    speak(state.currentQ.speech, true);
+                    if (isIOS) {
+                        cancelSpeech();
+                        state.micMuted = false;
+                        micRequestStart('user');
+                    } else speak(state.currentQ.speech, true);
                 }
             }
         }
@@ -1634,6 +1677,8 @@
             if (synth.speaking || synth.pending) synth.cancel();
             if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
             const utter = new SpeechSynthesisUtterance(text);
+            // Retain it until completion; WebKit can lose callbacks otherwise.
+            state.activeUtterance = utter;
             utter.rate = 1.0;
             utter.pitch = 1.1;
             const voices = cachedVoices.length ? cachedVoices : synth.getVoices();
@@ -1654,6 +1699,7 @@
                 if (finished || !valid()) return;
                 finished = true;
                 state.speaking = false;
+                state.activeUtterance = null;
                 if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
                 if (autoListen || resumeMic) micRequestStart('auto');
             };
@@ -1665,9 +1711,9 @@
             // question supersedes it, so it cannot open the mic mid-next-question.
             state.speechTimer = schedule(() => {
                 if (!valid()) return;
-                state.speechTimer = null;
-                state.speaking = false;
-                if (autoListen || resumeMic) micRequestStart('auto');
+                // Stop stalled speech before allowing the microphone to listen.
+                try { synth.cancel(); } catch {}
+                finish();
             }, Math.min(7000, 1500 + text.length * 120));
             try { synth.speak(utter); } catch { finish(); }
         }
@@ -1682,7 +1728,7 @@
                 const AC = window.AudioContext || window.webkitAudioContext;
                 if (!AC) return;
                 if (!audioCtx) audioCtx = new AC();
-                if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+                if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') audioCtx.resume().catch(() => {});
             } catch (e) {}
         }
 
@@ -1731,6 +1777,7 @@
                 state.micMuted = true;
                 micRequestStop();
             } else {
+                cancelSpeech();
                 state.micMuted = false;
                 if (state.micState === 'blocked') state.micState = 'off'; // manual retry after a denial
                 micRequestStart('user');
@@ -1758,8 +1805,6 @@
         // iOS Safari never fires beforeinstallprompt, so the install button can
         // never appear there. Show the Share-sheet instructions instead.
         (function showIosInstallHint() {
-            const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
             if (isIOS && !isStandalone) {
                 document.getElementById('iosInstallHint').classList.remove('hidden');
@@ -1784,3 +1829,4 @@
     </script>
 </body>
 </html>
+

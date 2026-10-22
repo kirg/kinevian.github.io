@@ -105,9 +105,14 @@ function setup(options = {}) {
     const speech = [];
     class Recognition {
         constructor() { requests.push(this); }
-        start() { this.started = true; this.onstart?.(); }
+        start() {
+            this.starts = (this.starts || 0) + 1;
+            if (options.startError) { const error = new Error('Cannot start'); error.name = options.startError; throw error; }
+            this.started = true;
+            if (!options.delayedStart) this.onstart?.();
+        }
         abort() { this.aborted = true; this.onend?.(); }
-        stop() { this.onend?.(); }
+        stop() { if (!options.missingStopEnd) this.onend?.(); }
         result(text) {
             const result = [{ transcript: text }];
             result.isFinal = true;
@@ -116,7 +121,8 @@ function setup(options = {}) {
         error(error) { this.onerror?.({ error }); this.onend?.(); }
     }
     const window = new Element('window', document);
-    window.location = { protocol: 'file:' };
+    window.reloads = 0;
+    window.location = { protocol: 'file:', reload: () => window.reloads++ };
     window.matchMedia = () => ({ matches: false });
     window.scrollTo = () => {};
     window.speechSynthesis = options.noSynthesis ? undefined : {
@@ -124,8 +130,12 @@ function setup(options = {}) {
     };
     window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
     if (options.voice) window.SpeechRecognition = Recognition;
+    const serviceWorker = options.serviceWorker ? new Element('service-worker', document) : undefined;
+    if (serviceWorker) serviceWorker.controller = options.controlled ? {} : null;
+    const navigator = { userAgent: options.userAgent || 'iPhone' };
+    if (serviceWorker) navigator.serviceWorker = serviceWorker;
     const context = vm.createContext({
-        window, document, navigator: { userAgent: 'iPhone' },
+        window, document, navigator,
         HTMLButtonElement: Button, HTMLInputElement: Input,
         SpeechSynthesisUtterance: window.SpeechSynthesisUtterance, speechSynthesis: window.speechSynthesis,
         localStorage: {
@@ -160,10 +170,11 @@ function setup(options = {}) {
         time = end;
     }
     return {
-        context, document, window, requests, speech, storage, timers, advance,
+        context, document, window, serviceWorker, requests, speech, storage, timers, advance,
         el: id => document.getElementById(id),
         run: code => vm.runInContext(code, context),
         get state() { return JSON.parse(vm.runInContext('JSON.stringify(state)', context)); }
     };
 }
 module.exports = { setup };
+

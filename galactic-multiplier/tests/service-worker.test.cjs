@@ -60,7 +60,7 @@ function worker(options = {}) {
 test('installation caches only a complete local shell', async () => {
     const sw = worker();
     await sw.lifecycle('install');
-    const urls = [...sw.stores.get('galactic-multiplier-v13').keys()];
+    const urls = [...sw.stores.get('galactic-multiplier-v14').keys()];
     assert.equal(urls.length, 22);
     assert.ok(urls.every(url => url.startsWith('https://kinevian.com/galactic-multiplier/')));
     assert.ok(urls.some(url => url.endsWith('/numbers.js')));
@@ -120,3 +120,4 @@ test('cache quota and storage denial do not discard a working online response', 
         assert.equal(await (await sw.fetch(url)).text(), 'fresh:' + url);
     }
 });
+

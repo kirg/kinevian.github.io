@@ -138,3 +138,114 @@ test('settings and German labels persist alongside existing badges', () => {
     assert.equal(reloaded.state.operation,'divide');
     assert.equal(reloaded.state.mode,'test');
 });
+
+test('iPhone voice switch starts inside the tap and cancels question speech', () => {
+    const app = setup({voice:true});
+    app.run('startGame()');
+    assert.equal(app.speech.length, 1, 'first question is spoken within Start, without a timer');
+    assert.equal(app.state.speaking, true);
+    app.run('toggleKeypad()');
+    assert.equal(app.state.speaking, false);
+    assert.equal(app.requests.at(-1).starts, 1);
+    assert.equal(app.state.micState, 'listening');
+    app.requests.at(-1).result(String(app.state.currentQ.ans));
+    assert.equal(app.state.score, 10);
+});
+
+test('iPhone does not reopen recognition from silence or speech callbacks', () => {
+    const app = setup({voice:true});
+    app.run('startGame(); toggleKeypad()');
+    const rec = app.requests.at(-1);
+    rec.onend();
+    app.advance(10000);
+    assert.equal(rec.starts, 1);
+    assert.equal(app.state.micIntent, false);
+    assert.equal(app.state.micState, 'off');
+    app.el('micBtn').click();
+    assert.equal(rec.starts, 2, 'a new tap can start again');
+    app.run('nextQuestion()');
+    app.advance(10000);
+    assert.equal(rec.starts, 2);
+});
+
+test('desktop silence restarts remain bounded', () => {
+    const app = setup({voice:true, userAgent:'Chrome'});
+    app.run('state.sound=false; startGame(); toggleKeypad()');
+    const rec = app.requests.at(-1);
+    for (let i=0; i<4; i++) { rec.onend(); app.advance(250); }
+    assert.equal(rec.starts, 3);
+    assert.equal(app.state.micIntent, false);
+});
+
+test('thrown recognition starts never display a false listening state', () => {
+    for (const startError of ['NotAllowedError', 'SecurityError', 'InvalidStateError']) {
+        const app = setup({voice:true, startError});
+        app.run('startGame(); toggleKeypad()');
+        assert.equal(app.state.usingKeypad, true);
+        assert.equal(app.state.micIntent, false);
+        assert.notEqual(app.state.micState, 'listening');
+        app.run('addKey(1)');
+        assert.equal(app.state.keypadInput, '1');
+    }
+});
+
+test('a recognizer that never starts returns to a usable keypad', () => {
+    const app = setup({voice:true, delayedStart:true});
+    app.run('startGame(); toggleKeypad()');
+    const rec = app.requests.at(-1);
+    assert.equal(app.state.micState, 'starting');
+    app.advance(10000);
+    assert.equal(app.state.usingKeypad, true);
+    assert.equal(app.state.micIntent, false);
+    rec.onstart();
+    rec.result(String(app.state.currentQ.ans));
+    assert.equal(app.state.score, 0, 'late callbacks after fallback cannot submit');
+});
+
+test('iPhone tap while recognition is stopping does not wait for a lost onend', () => {
+    const app = setup({voice:true, missingStopEnd:true});
+    app.run('startGame(); toggleKeypad()');
+    const old = app.requests.at(-1);
+    app.el('micBtn').click();
+    assert.equal(app.state.micState, 'stopping');
+    app.el('micBtn').click();
+    assert.notEqual(app.requests.at(-1), old);
+    assert.equal(app.state.micState, 'listening');
+});
+
+test('resuming a mission reactivates an interrupted iPhone AudioContext', () => {
+    const app = setup();
+    app.run("window.AudioContext=class {constructor(){this.state='running';this.resumes=0} resume(){this.resumes++;this.state='running';return Promise.resolve()}}; startGame(); pauseGame(); audioCtx.state='interrupted'; resumeGame()");
+    assert.equal(app.run('audioCtx.resumes'), 1);
+});
+
+test('speech fallback cancels stalled synthesis and releases the utterance', () => {
+    const app = setup({voice:true});
+    let cancels = 0;
+    app.window.speechSynthesis.cancel = () => cancels++;
+    app.run('startGame()');
+    assert.equal(app.run('state.activeUtterance.text'), app.state.currentQ.speech);
+    const before = cancels;
+    app.advance(10000);
+    assert.ok(cancels > before);
+    assert.equal(app.state.activeUtterance, null);
+    assert.equal(app.state.speaking, false);
+});
+
+test('an installed app update waits until the active mission returns to base', () => {
+    const app = setup({serviceWorker:true, controlled:true});
+    app.run('startGame()');
+    app.serviceWorker.dispatchEvent({type:'controllerchange'});
+    assert.equal(app.window.reloads, 0);
+    app.run('quitGame()');
+    assert.equal(app.window.reloads, 1);
+});
+
+test('first installation does not reload but an idle update does', () => {
+    const app = setup({serviceWorker:true});
+    app.serviceWorker.dispatchEvent({type:'controllerchange'});
+    assert.equal(app.window.reloads, 0);
+    app.serviceWorker.dispatchEvent({type:'controllerchange'});
+    assert.equal(app.window.reloads, 1);
+});
+

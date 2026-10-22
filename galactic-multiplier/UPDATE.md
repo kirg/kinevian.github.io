@@ -1,3 +1,13 @@
+# October 22 iPhone fixes
+
+- iOS starts voice input directly from the microphone or input-mode tap. It no longer attempts automatic recognition restarts after speech or silence; tap the microphone for each answer.
+- A thrown or stalled microphone start returns to the keypad instead of showing a false listening state. A new tap recovers even if Safari never delivers the previous stop callback. Permission callbacks from disposed recognizers are ignored.
+- The first spoken question runs inside the Start tap. Utterances stay retained until completion, stalled speech is cancelled before listening, and Resume reactivates interrupted audio.
+- Keypad mode uses compact feedback and two columns of mission controls. The duplicate voice switch below the keypad is removed from layout, and the sound setting has a larger touch target.
+- Cache v14 refreshes the installed shell. Later worker updates reload an idle app or wait until the active mission returns to base.
+
+Validation: all 31 deterministic game and service-worker checks pass with `node --test --test-isolation=none galactic-multiplier/tests/*.test.cjs`. Ten new checks cover iPhone input, microphone failures, interrupted audio, speech cleanup, and app updates. Browser execution was blocked by the workspace's socket permissions; actual Safari speech services, safe areas, and Home Screen behavior still require an iPhone check.
+
 # October 19 update
 
 These changes incorporate the remaining review fixes into the current app. They retain the existing theme, self-hosted fonts/icons, microphone state machine, interim transcripts, and bounded auto-listen behavior.
@@ -31,3 +41,4 @@ Browser checks:
     BROWSER=webkit python galactic-multiplier/tests/browser_test.py
 
 The GitHub workflow runs both engines and retains screenshots at seven viewport sizes. Speech services are mocked. Actual iPhone permissions/services, safe areas, and Home Screen mode still benefit from device verification.
+

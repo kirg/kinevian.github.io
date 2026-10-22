@@ -19,10 +19,21 @@ body > * { flex-shrink: 0; }
 #btnCloseKeypad { min-height: 44px; margin-top: 4px; color: #cbd5e1; }
 body.keypad-open #gameArea { padding-bottom: 8px; }
 body.keypad-open #micBtn, body.keypad-open #micStatus, body.keypad-open #heardText { display: none; }
-body.keypad-open #gameArea > .mb-6 { margin-bottom: 8px; }
-body.keypad-open #mascot { font-size: 2rem; }
-body.keypad-open #gameArea > .mb-8 { margin-bottom: 8px; }
-body.keypad-open #gameArea > .h-16 { height: 48px; margin-bottom: 8px; }
+body.keypad-open #gameArea { padding-top: 8px; }
+body.keypad-open #gameArea > .mb-6 { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 32px; margin-bottom: 4px; }
+body.keypad-open #mascot { font-size: 1.5rem; }
+body.keypad-open #speechBubble { margin-top: 0; line-height: 1.25; max-width: min(70vw, 320px); }
+body.keypad-open #lblWhatIs { display: none; }
+body.keypad-open #questionBox { padding: 8px 12px; line-height: 1.1; }
+body.keypad-open #gameArea > .mb-8 { margin-bottom: 4px; }
+body.keypad-open #gameArea > .h-16 { height: 44px; margin-bottom: 4px; }
+body.keypad-open #gameControls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+body.keypad-open #gameControls button { margin: 0; line-height: 1.25; }
+/* The voice switch is already above the keypad; a second close button wastes a row. */
+body.keypad-open #btnCloseKeypad { display: none; }
+#soundToggle { width: 20px; height: 20px; vertical-align: middle; }
+#soundToggle + span { vertical-align: middle; }
+#startScreen label { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; }
 #btnAbort { color: #fca5a5; }
 .num-toggle { width: 44px; height: 44px; }
 .badge-grid { max-height: none; flex: 0 0 auto; }
@@ -39,3 +50,4 @@ button:disabled { opacity: .55; cursor: default; }
   body.game-active.keypad-open #mascot, body.game-active.keypad-open #lblWhatIs { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
