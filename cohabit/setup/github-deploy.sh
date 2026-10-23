@@ -55,9 +55,14 @@ for role in roles/firebase.admin roles/cloudfunctions.admin roles/run.admin role
   gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$SA" --role="$role" --condition=None --quiet >/dev/null \
     || die "Couldn't grant $role."
 done
-# Functions run as the default compute account; the deployer may assign it.
-gcloud iam service-accounts add-iam-policy-binding "$NUM-compute@developer.gserviceaccount.com" \
-  --member="serviceAccount:$SA" --role=roles/iam.serviceAccountUser --quiet >/dev/null || die "Couldn't allow using the compute account."
+# Functions run as the default compute account, and the Firebase CLI also checks the
+# App Engine default account; the deployer may assign both.
+for runner in "$NUM-compute@developer.gserviceaccount.com" "$PROJECT_ID@appspot.gserviceaccount.com"; do
+  if gcloud iam service-accounts describe "$runner" >/dev/null 2>&1; then
+    gcloud iam service-accounts add-iam-policy-binding "$runner" \
+      --member="serviceAccount:$SA" --role=roles/iam.serviceAccountUser --quiet >/dev/null || die "Couldn't allow using $runner."
+  fi
+done
 ok "Permissions for deploying"
 
 gcloud iam service-accounts add-iam-policy-binding "$SA" --role=roles/iam.workloadIdentityUser \
