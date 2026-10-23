@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page not found</title>
+    <script>
+      // GitHub Pages can't rewrite URLs, so single-page apps hosted here get their
+      // deep links (e.g. /cohabit/join/K7QFM2XP) via this page: we hand the path to
+      // the app, which restores it. Add more apps to this list as needed.
+      (function () {
+        var apps = ['/cohabit/'];
+        var path = location.pathname;
+        for (var i = 0; i < apps.length; i++) {
+          var base = apps[i];
+          if (path.indexOf(base) === 0 && path !== base) {
+            var rest = '/' + path.slice(base.length) + location.search + location.hash;
+            location.replace(base + '?p=' + encodeURIComponent(rest));
+            return;
+          }
+        }
+      })();
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; color: #2b2433; background: #fffbf7; }
+      main { text-align: center; padding: 24px; }
+      a { color: #e85c3a; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Page not found</h1>
+      <p><a href="/">Go to the home page</a></p>
+    </main>
+  </body>
+</html>
