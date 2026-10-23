@@ -1,4 +1,4 @@
-const CACHE_NAME = 'galactic-multiplier-v14';
+const CACHE_NAME = 'galactic-multiplier-v15';
 const CACHE_PREFIX = 'galactic-multiplier-';
 const ASSETS = [
   "./index.html",

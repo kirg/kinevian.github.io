@@ -2,8 +2,8 @@
   "name": "Galactic Multiplier",
   "short_name": "Galactic",
   "description": "Master multiplication and division in a fun, space-themed adventure!",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/galactic-multiplier/index.html",
+  "scope": "/galactic-multiplier/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
@@ -28,5 +28,5 @@
       "purpose": "maskable"
     }
   ],
-  "id": "./index.html"
+  "id": "/galactic-multiplier/?app=galactic-multiplier"
 }
