@@ -8,8 +8,12 @@
       // GitHub Pages can't rewrite URLs, so single-page apps hosted here get their
       // deep links (e.g. /cohabit/join/K7QFM2XP) via this page: we hand the path to
       // the app, which restores it. Add more apps to this list as needed.
+      // CoHabit moved to its own address; send old links (e.g. invites) straight there.
+      if (location.pathname.indexOf('/cohabit/') === 0) {
+        location.replace('https://cohabit.kinevian.com/' + location.pathname.slice('/cohabit/'.length) + location.search + location.hash);
+      }
       (function () {
-        var apps = ['/cohabit/'];
+        var apps = [];
         var path = location.pathname;
         for (var i = 0; i < apps.length; i++) {
           var base = apps[i];
