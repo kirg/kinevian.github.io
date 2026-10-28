@@ -1,0 +1,15 @@
+/* Self-hosted Google Fonts (latin subset: covers English and German incl. umlauts/ß). */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url(fonts/fredoka-latin.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/pressstart2p-latin.woff2) format('woff2');
+}
