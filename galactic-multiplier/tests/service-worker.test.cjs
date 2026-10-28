@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
+// Read the real cache name so the test doesn't go stale every time the worker is bumped.
+const CACHE_NAME = fs.readFileSync(path.join(__dirname, '..', 'service-worker.js'), 'utf8').match(/CACHE_NAME = '([^']+)'/)[1];
 function worker(options = {}) {
     const events = new Map();
     const stores = new Map();
@@ -60,7 +62,7 @@ function worker(options = {}) {
 test('installation caches only a complete local shell', async () => {
     const sw = worker();
     await sw.lifecycle('install');
-    const urls = [...sw.stores.get('galactic-multiplier-v14').keys()];
+    const urls = [...sw.stores.get(CACHE_NAME).keys()];
     assert.equal(urls.length, 22);
     assert.ok(urls.every(url => url.startsWith('https://kinevian.com/galactic-multiplier/')));
     assert.ok(urls.some(url => url.endsWith('/numbers.js')));

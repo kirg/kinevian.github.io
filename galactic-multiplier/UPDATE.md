@@ -1,3 +1,11 @@
+# October 28 device-report fixes
+
+- **Question numbers could be invisible.** `.pop-in` started at `opacity: 0` on the element itself, and the reduced-motion rule switches animations off, so the numbers never appeared (Android "remove animations", iOS Reduce Motion, some battery savers). The hidden start state now lives in the keyframes; with animation off the numbers are simply visible. Streak stars used the same class.
+- **Title unreadable on iPhone.** The gradient title has a transparent text fill, and iOS Safari paints `text-shadow` through it as a solid purple blob. The title now glows with `filter: drop-shadow` instead.
+- **Short phones (≤620px tall, e.g. iPhone SE with Safari toolbars):** the last keypad row was below the fold. Keypad mode now drops the mascot row and uses 44px keys so the answer and the whole keypad fit.
+- Cache v16. `tests/styles.test.cjs` guards the first two. Two inherited tests were fixed: the service-worker test hardcoded an old cache name, and the "factors 11/12" test was randomly flaky (it now seeds `Math.random` before `startGame()`).
+- Typed digits already show in the current layout; a build where the fixed keypad covered the answer line is what produced the missing-digits report. Installed copies pick up v16 on the next online launch (close and reopen the app once if it still looks old).
+
 # October 22 iPhone fixes
 
 - iOS starts voice input directly from the microphone or input-mode tap. It no longer attempts automatic recognition restarts after speech or silence; tap the microphone for each answer.
