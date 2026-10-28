@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CoHabit has moved</title>
+    <meta name="robots" content="noindex" />
+    <script>
+      // CoHabit moved to https://cohabit.kinevian.com — keep the rest of the link
+      // (e.g. an invite /join/CODE, which the old 404 page passed as ?p=/join/CODE).
+      (function () {
+        var q = new URLSearchParams(location.search);
+        var p = q.get('p');
+        var path = p && p.charAt(0) === '/' ? p : location.pathname.replace(/^\/cohabit/, '') + location.search + location.hash;
+        location.replace('https://cohabit.kinevian.com' + (path || '/'));
+      })();
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; color: #2b2433; background: #fffbf7; }
+      main { text-align: center; padding: 24px; max-width: 28rem; }
+      a { color: #e85c3a; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>CoHabit has moved</h1>
+      <p>It now lives at <a href="https://cohabit.kinevian.com/">cohabit.kinevian.com</a>.</p>
+      <p>If you installed the old app, remove it and install CoHabit again from the new address.</p>
+    </main>
+  </body>
+</html>

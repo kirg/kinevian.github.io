@@ -1,62 +1,78 @@
-// Everything the app needs is same-origin, so it works fully offline once installed.
-// Bump CACHE_NAME when shipping changes so old caches are purged.
-const CACHE_NAME = 'galactic-multiplier-v10';
+const CACHE_NAME = 'galactic-multiplier-v15';
+const CACHE_PREFIX = 'galactic-multiplier-';
 const ASSETS = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './speech-numbers.js',
-  './manifest.json',
-  './icon.png',
-  './icon-192.png',
-  './apple-touch-icon.png',
-  './vendor/fonts.css',
-  './vendor/fontawesome.css',
-  './vendor/fonts/fredoka-latin.woff2',
-  './vendor/fonts/pressstart2p-latin.woff2',
-  './vendor/webfonts/fa-solid-900.woff2',
-  './vendor/webfonts/fa-regular-400.woff2'
+  "./index.html",
+  "./style.css",
+  "./fixes.css",
+  "./numbers.js",
+  "./fonts.css",
+  "./manifest.json",
+  "./icon.png",
+  "./favicon.ico",
+  "./apple-touch-icon-180.png",
+  "./icon-192.png",
+  "./icon-maskable.png",
+  "./fonts/fredoka-300-latin.woff2",
+  "./fonts/fredoka-400-latin.woff2",
+  "./fonts/fredoka-600-latin.woff2",
+  "./fonts/fredoka-300-latin-ext.woff2",
+  "./fonts/fredoka-400-latin-ext.woff2",
+  "./fonts/fredoka-600-latin-ext.woff2",
+  "./fonts/press-start-2p-400-latin.woff2",
+  "./fonts/press-start-2p-400-latin-ext.woff2",
+  "./vendor/fontawesome/css/all.min.css",
+  "./vendor/fontawesome/webfonts/fa-solid-900.woff2",
+  "./vendor/fontawesome/webfonts/fa-regular-400.woff2"
 ];
-const NETWORK_TIMEOUT_MS = 3000;
+const SHELL_URL = new URL('./index.html', self.registration.scope).href;
+const ASSET_URLS = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((k) => k.startsWith('galactic-multiplier-') && k !== CACHE_NAME).map((k) => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
-  );
-});
-
-// Network-first (so updates show up as soon as the user is online) with a short timeout,
-// falling back to the cache for offline use or a flaky connection.
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-
-  e.respondWith((async () => {
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = () => cache.match(req, { ignoreSearch: true });
-    try {
-      const response = await Promise.race([
-        fetch(req),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NETWORK_TIMEOUT_MS))
-      ]);
-      if (response && response.ok) cache.put(req, response.clone());
-      return response;
-    } catch (err) {
-      const hit = await cached();
-      if (hit) return hit;
-      if (req.mode === 'navigate') return (await cache.match('./index.html')) || Response.error();
-      return Response.error();
-    }
+    // Install only a complete shell. Third-party outages cannot block this.
+    await cache.addAll(ASSETS.map(path => new Request(new URL(path, self.registration.scope), { cache: 'reload' })));
+    await self.skipWaiting();
   })());
 });
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    // Other games share this origin; never delete their caches.
+    await Promise.all(names.filter(name => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME).map(name => caches.delete(name)));
+    await self.clients.claim();
+  })());
+});
+
+async function networkFirst(request, navigation) {
+  let cache;
+  try { cache = await caches.open(CACHE_NAME); }
+  catch { return fetch(request); } // Disabled storage must not break the online game.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
+  try {
+    const response = await fetch(request, { signal: controller.signal, cache: 'no-cache' });
+    if (!response.ok) throw new Error('Asset unavailable');
+    // Store canonical shell navigation so /, /index.html, and query strings work offline.
+    try { await cache.put(navigation ? SHELL_URL : request.url, response.clone()); }
+    catch { /* Quota or private-browsing restrictions must not discard a good response. */ }
+    return response;
+  } catch {
+    const cached = await cache.match(navigation ? SHELL_URL : request.url).catch(() => undefined);
+    return cached || new Response('Galactic Multiplier is unavailable offline. Connect once to install it.', {
+      status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  } finally { clearTimeout(timeout); }
+}
+
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  const navigation = event.request.mode === 'navigate' &&
+    (url.pathname === new URL(self.registration.scope).pathname || url.pathname === new URL(SHELL_URL).pathname);
+  if (!navigation && !ASSET_URLS.has(url.href)) return;
+  event.respondWith(networkFirst(event.request, navigation));
+});
+
+

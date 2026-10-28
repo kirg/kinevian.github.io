@@ -2,268 +2,1831 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover lets the layout use the full screen; safe-area insets keep content clear of the notch / home bar.
-         Zoom is left enabled (iOS ignores user-scalable=no anyway, and it hurts accessibility). -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Master multiplication and division in a fun, space-themed adventure! Voice or keypad, English and German.">
     <title>Galactic Multiplier</title>
-
-    <!-- PWA -->
+    
+    <!-- PWA Configuration -->
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
     <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Multiplier">
+    <meta name="apple-mobile-web-app-title" content="Galactic">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
 
-    <!-- Social sharing (absolute URLs are required by most crawlers) -->
+    <!-- Social Media Sharing (Open Graph) -->
     <meta property="og:title" content="Galactic Multiplier">
     <meta property="og:description" content="Master multiplication and division in a fun, space-themed adventure!">
-    <meta property="og:image" content="https://kinevian.com/galactic-multiplier/icon.png">
+    <meta property="og:url" content="https://kinevian.com/galactic-multiplier/">
+    <meta property="og:image" content="https://kinevian.com/galactic-multiplier/icon.png?v=2">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
     <meta property="og:type" content="website">
+    
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Galactic Multiplier">
-    <meta name="twitter:image" content="https://kinevian.com/galactic-multiplier/icon.png">
+    <meta name="twitter:description" content="Master multiplication and division in a fun, space-themed adventure!">
+    <meta name="twitter:image" content="https://kinevian.com/galactic-multiplier/icon.png?v=2">
 
-    <!-- Everything is self-hosted so the app works offline (see README.md) -->
-    <link rel="preload" href="vendor/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="vendor/fonts.css">
-    <link rel="stylesheet" href="vendor/fontawesome.css">
-    <link rel="stylesheet" href="styles.css">
+    <!-- Self-hosted assets: precompiled Tailwind (style.css), Font Awesome CSS, local fonts.
+         The old page loaded the Tailwind Play CDN compiler and the Font Awesome JS at runtime:
+         slow, production-unsupported, and broken offline / in the PWA cache. -->
+    <link rel="stylesheet" href="fonts.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="numbers.js"></script>
+    
+    <!-- Standard CSS for Fonts and Animations -->
+    <style>
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Fredoka', system-ui, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+            /* iOS: 100vh includes the area behind Safari's toolbar; dvh tracks the
+               visible viewport. Fallback first for older browsers. */
+            height: 100vh;
+            height: 100dvh;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        /* Full-screen overlays must also respect the dynamic viewport + safe areas */
+        .screen-overlay {
+            height: 100vh;
+            height: 100dvh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* When the keypad is open, lift the game area so the answer and mic
+           controls are not hidden behind it (worst on small iPhones). */
+        body.keypad-open #gameArea { padding-bottom: 19rem; }
+        @media (max-height: 500px) {
+            body.keypad-open #gameArea { padding-bottom: 15rem; }
+        }
+
+        :focus-visible {
+            outline: 3px solid #93c5fd;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .stars, .bounce, .pop-in, .pulse-mic { animation: none !important; }
+            .shake { animation: none !important; }
+        }
+
+        /* Animated Star Background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: stars 4s linear infinite;
+        }
+
+        @keyframes stars {
+            from { transform: translateY(0); }
+            to { transform: translateY(200px); }
+        }
+
+        /* Neon Glow Effects */
+        .neon-text {
+            text-shadow: 0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 30px #d8b4fe;
+        }
+        
+        /* Animations */
+        .pulse-mic { animation: pulse-mic 1.5s infinite; }
+        @keyframes pulse-mic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .bounce { animation: bounce 0.5s cubic-bezier(0.8, 0, 1, 1); }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        .pop-in {
+            animation: popIn 0.3s ease-out forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Keypad Styling */
+        .key-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.1s;
+        }
+        .key-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+        
+        /* Badge styles are compiled into style.css (they used @apply
+           inside a plain <style> tag, which browsers silently drop). */
+    </style>
+    
+    <!-- Mode/op/num-toggle component styles are compiled into style.css. -->
+    <link rel="stylesheet" href="fixes.css">
 </head>
-<body>
+<body class="w-full flex flex-col items-center justify-between p-4 selection:bg-purple-500 selection:text-white">
+    <noscript><div style="padding:1rem;text-align:center;font-weight:bold">Galactic Multiplier needs JavaScript to play.</div></noscript>
 
     <!-- Background -->
-    <div class="stars" aria-hidden="true"></div>
-    <div class="stars far" aria-hidden="true"></div>
+    <div class="stars"></div>
+    <div class="stars" style="animation-delay: -2s; background-size: 300px 300px; opacity: 0.5;"></div>
 
-    <!-- ============ Start / configuration screen ============ -->
-    <section id="startScreen" class="screen active screen-pad scroll-y flex-col items-center bg-slate-900/90">
-        <div class="w-full max-w-sm flex justify-between items-center mb-2">
-            <button onclick="toggleLanguage()" id="langBtn" class="round-btn bg-slate-800 border border-slate-600 text-2xl" aria-label="Language">🇺🇸</button>
-            <button id="installBtn" onclick="installApp()" class="hidden round-btn bg-green-600 border-2 border-green-400 animate-pulse" aria-label="Install app">
-                <i class="fa-solid fa-download text-white text-lg"></i>
-            </button>
+    <!-- Header / Stats -->
+    <div class="w-full max-w-md flex justify-between items-center z-10 pt-2 relative">
+        <div class="flex flex-col">
+            <span class="text-xs text-blue-300 uppercase tracking-widest" id="lblScore">Score</span>
+            <span id="scoreDisplay" class="text-2xl font-bold text-blue-400">0</span>
+        </div>
+        
+        <!-- Timer/Counter Display -->
+        <div id="missionStatus" class="absolute left-1/2 -translate-x-1/2 top-2 bg-slate-800/80 px-4 py-1 rounded-full border border-slate-600 hidden">
+            <span id="statusIcon" class="mr-2 text-yellow-400"><i class="fa-solid fa-clock"></i></span>
+            <span id="statusValue" class="font-mono text-xl text-white">60</span>
         </div>
 
-        <div class="mb-4 text-center w-full">
-            <h1 id="appTitle" data-i18n="title" class="font-game text-[clamp(1.05rem,5.6vw,1.9rem)] font-bold mb-2 neon-text text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-relaxed whitespace-pre-line">GALACTIC
-MULTIPLIER</h1>
-            <p data-i18n="missionControl" class="text-xs text-gray-400">Mission Control</p>
+        <div class="flex flex-col items-end">
+            <span class="text-xs text-yellow-300 uppercase tracking-widest" id="lblStreak">Streak</span>
+            <div class="flex gap-1" id="streakContainer">
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+            </div>
         </div>
+    </div>
 
-        <button onclick="openHall()" class="w-full max-w-sm mb-4 min-h-[48px] py-3 bg-slate-800 active:bg-slate-700 border border-slate-600 rounded-xl flex items-center justify-center gap-2 shadow-lg">
-            <i class="fa-solid fa-trophy text-yellow-400"></i>
-            <span data-i18n="viewHall" class="text-sm font-bold text-slate-200">View Hall of Fame</span>
-        </button>
-
-        <!-- Mode -->
-        <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex gap-1 mb-4">
-            <button id="btnModePractice" onclick="setMode('practice')" data-i18n="flightDrill" class="seg-btn active">Flight Drill</button>
-            <button id="btnModeTest" onclick="setMode('test')" data-i18n="liveMission" class="seg-btn purple">Live Mission</button>
-        </div>
-
-        <!-- Operation -->
-        <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex gap-1 mb-6">
-            <button id="btnOpMultiply" onclick="setOperation('multiply')" class="seg-btn active purple">
-                <i class="fa-solid fa-xmark mr-1"></i><span data-i18n="multiply">Multiply</span>
-            </button>
-            <button id="btnOpDivide" onclick="setOperation('divide')" class="seg-btn purple">
-                <i class="fa-solid fa-divide mr-1"></i><span data-i18n="divide">Divide</span>
-            </button>
-        </div>
-
-        <!-- Target numbers -->
-        <div class="w-full max-w-sm mb-6">
-            <p data-i18n="selectTargets" class="text-sm text-center text-blue-200 mb-3">Select Target Numbers:</p>
-            <div class="grid grid-cols-4 gap-3 justify-items-center" id="numGrid"></div>
-        </div>
-
-        <!-- Test options (Live Mission only) -->
-        <div id="configTest" class="w-full max-w-sm hidden mb-6">
-            <p data-i18n="selectMission" class="text-sm text-center text-blue-200 mb-3">Select Mission Type:</p>
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="setTestType('time')" id="btnTestTime" class="mode-btn active flex flex-col items-center justify-center py-4">
-                    <i class="fa-solid fa-stopwatch text-xl mb-1"></i>
-                    <span data-i18n="blitz">1 Min Blitz</span>
-                </button>
-                <button onclick="setTestType('count')" id="btnTestCount" class="mode-btn flex flex-col items-center justify-center py-4">
-                    <i class="fa-solid fa-list-ol text-xl mb-1"></i>
-                    <span data-i18n="twentyQs">20 Qs</span>
-                </button>
+    <!-- Main Game Area -->
+    <div id="gameArea" class="flex-1 flex flex-col justify-center items-center w-full max-w-md relative z-10 hidden">
+        
+        <!-- Mascot Area -->
+        <div class="mb-6 relative">
+            <div id="mascot" class="text-6xl transition-transform duration-300">🛸</div>
+            <div id="speechBubble" aria-live="polite" class="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-white text-slate-900 px-4 py-2 rounded-2xl whitespace-nowrap opacity-0 transition-opacity duration-300 font-bold border-4 border-blue-400 z-20">
+                Ready?
             </div>
         </div>
 
-        <div class="mt-auto pt-2 w-full max-w-sm">
-            <button onclick="startGame()" class="w-full min-h-[56px] py-4 bg-gradient-to-r from-blue-600 to-purple-600 active:scale-[0.98] rounded-full text-xl font-bold shadow-xl shadow-purple-900/50 transition-transform flex items-center justify-center gap-3">
-                <i class="fa-solid fa-rocket"></i><span id="startBtnText">Start Drill</span>
+        <!-- Question -->
+        <div class="text-center mb-8">
+            <div class="text-xl text-purple-300 mb-2" id="lblWhatIs">What is...</div>
+            <div id="questionBox" role="status" aria-live="polite" class="flex items-center justify-center gap-4 text-6xl font-bold neon-text bg-slate-900/50 p-6 rounded-3xl border border-purple-500/30 backdrop-blur-sm">
+                <span id="num1" class="text-purple-400">?</span>
+                <span id="operatorSign" class="text-white text-4xl">×</span>
+                <span id="num2" class="text-purple-400">?</span>
+            </div>
+        </div>
+
+        <!-- Answer Display (what user said/typed) -->
+        <div class="h-16 flex items-center justify-center mb-4 w-full">
+            <div id="userAnswerDisplay" aria-live="polite" class="text-4xl font-bold text-yellow-400 tracking-widest min-h-[3rem]"></div>
+        </div>
+
+        <!-- Controls -->
+        <div id="gameControls" class="w-full flex flex-col items-center gap-4">
+            
+            <!-- Mic Button -->
+            <button type="button" aria-label="Speak answer" id="micBtn" class="w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center text-3xl shadow-lg border-4 border-red-400 transition-all hover:scale-105 active:scale-95">
+                <i class="fa-solid fa-microphone"></i>
             </button>
-            <p data-i18n="enableMic" class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
-            <p id="iosInstallHint" data-i18n="iosInstall" class="hidden text-xs text-blue-300/80 mt-2 text-center"></p>
-        </div>
-    </section>
+            <p id="micStatus" class="text-sm text-gray-400 animate-pulse">Tap to speak answer</p>
+            <p id="heardText" class="text-xs text-slate-400 h-4" aria-live="polite"></p>
 
-    <!-- ============ Hall of Fame ============ -->
-    <section id="hallScreen" class="screen screen-pad scroll-y flex-col items-center bg-slate-900/95">
+            <!-- Keypad Toggle -->
+            <button id="toggleKeypadBtn" class="text-sm text-blue-300 underline decoration-dotted mt-2">
+                Use Keypad Instead
+            </button>
+            <button onclick="pauseGame()" id="btnPause" class="text-sm text-blue-300">Pause</button>
+            <button onclick="endGame()" id="btnFinish" class="text-sm text-blue-300">Finish Drill</button>
+            <button onclick="quitGame()" id="btnAbort" class="text-xs text-red-400/60 mt-4 hover:text-red-400">Abort Mission</button>
+        </div>
+    </div>
+
+    <!-- Keypad (Hidden by default) -->
+    <div id="keypad" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))" class="hidden fixed bottom-0 left-0 w-full bg-slate-900/95 border-t border-slate-700 p-4 rounded-t-3xl z-50 backdrop-blur-xl transition-transform transform translate-y-full">
+        <div class="grid grid-cols-3 gap-3 max-w-md mx-auto">
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(1)">1</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(2)">2</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(3)">3</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(4)">4</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(5)">5</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(6)">6</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(7)">7</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(8)">8</button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(9)">9</button>
+            <button class="key-btn h-14 rounded-xl text-xl font-bold bg-red-500/20 text-red-300 border-red-500/30" aria-label="Delete last digit" onclick="backspaceKey()"><i class="fa-solid fa-delete-left"></i></button>
+            <button class="key-btn h-14 rounded-xl text-2xl font-bold" onclick="addKey(0)">0</button>
+            <button class="key-btn h-14 rounded-xl text-xl font-bold bg-green-500/20 text-green-300 border-green-500/30" onclick="checkAnswer(true)">OK</button>
+        </div>
+        <button onclick="toggleKeypad()" id="btnCloseKeypad" class="w-full text-center mt-4 text-gray-500 text-sm">Close Keypad</button>
+    </div>
+
+    <!-- Start / Configuration Screen -->
+    <div id="startScreen" class="screen-overlay absolute inset-0 bg-slate-900 z-50 flex flex-col items-center p-6 overflow-y-auto">
+        
+        <!-- PWA Install Icon (Top Right) -->
+        <button type="button" aria-label="Install app" id="installBtn" onclick="installApp()" class="hidden absolute top-4 right-4 w-12 h-12 bg-green-600 hover:bg-green-500 border-2 border-green-400 rounded-full flex items-center justify-center shadow-lg animate-pulse z-50" title="Install App">
+            <i class="fa-solid fa-download text-white text-lg"></i>
+        </button>
+
+        <!-- Language Toggle (Top Left) -->
+        <button type="button" aria-label="Switch language / Sprache wechseln" onclick="toggleLanguage()" id="langBtn" class="absolute top-4 left-4 w-12 h-12 bg-slate-800 border border-slate-600 rounded-full flex items-center justify-center shadow-lg text-2xl z-50">
+            🇺🇸
+        </button>
+
         <div class="mt-2 mb-4 text-center">
-            <h2 class="text-2xl font-bold mb-1 text-yellow-400"><i class="fa-solid fa-trophy mr-2"></i><span data-i18n="hallTitle">Hall of Fame</span></h2>
-            <p data-i18n="achievements" class="text-xs text-gray-400">Your Achievements</p>
+            <h1 id="appTitle" class="text-3xl font-bold mb-1 neon-text font-['Press_Start_2P'] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-tight">GALACTIC<br>MULTIPLIER</h1>
+            <p id="lblMissionControl" class="text-xs text-gray-400">Mission Control</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 w-full max-w-md p-2">
+        <!-- Badges Button (Replaces Grid) -->
+        <button onclick="openHallOfFame()" class="w-full max-w-sm mb-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg">
+            <i class="fa-solid fa-trophy text-yellow-400"></i>
+            <span id="btnViewHall" class="text-sm font-bold text-slate-200">View Hall of Fame</span>
+        </button>
+
+        <!-- Mode Toggle -->
+        <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex mb-4">
+            <button id="btnModePractice" onclick="setMode('practice')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg">Flight Drill</button>
+            <button id="btnModeTest" onclick="setMode('test')" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all">Live Mission</button>
+        </div>
+
+        <!-- Operation Toggle (New) -->
+        <div class="w-full max-w-sm bg-slate-800/50 p-1 rounded-xl flex gap-2 mb-6">
+            <button id="btnOpMultiply" onclick="setOperation('multiply')" class="op-btn active">
+                <i class="fa-solid fa-xmark mr-1"></i> <span id="lblMultiply">Multiply</span>
+            </button>
+            <button id="btnOpDivide" onclick="setOperation('divide')" class="op-btn">
+                <i class="fa-solid fa-divide mr-1"></i> <span id="lblDivide">Divide</span>
+            </button>
+        </div>
+
+        <!-- Shared Number Configuration -->
+        <div class="w-full max-w-sm mb-6">
+            <p id="lblSelectTargets" class="text-sm text-center text-blue-200 mb-3">Select Target Numbers:</p>
+            <div class="grid grid-cols-4 gap-3 justify-items-center" id="numGrid">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- Test Configuration (Only visible in test mode) -->
+        <div id="configTest" class="w-full max-w-sm hidden mb-6">
+            <p id="lblSelectMission" class="text-sm text-center text-blue-200 mb-3">Select Mission Type:</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="setTestType('time')" id="btnTestTime" class="mode-btn active flex flex-col items-center justify-center py-4">
+                    <i class="fa-solid fa-stopwatch text-xl mb-1"></i>
+                    <span id="lblBlitz">1 Min Blitz</span>
+                </button>
+                <button onclick="setTestType('count')" id="btnTestCount" class="mode-btn flex flex-col items-center justify-center py-4">
+                    <i class="fa-solid fa-list-ol text-xl mb-1"></i>
+                    <span id="lblTwenty">20 Qs</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-auto mb-4 w-full max-w-sm">
+            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-xl font-bold shadow-xl shadow-purple-900/50 hover:scale-105 transition-transform flex items-center justify-center gap-3">
+                <i class="fa-solid fa-rocket"></i> <span id="startBtnText">Start Drill</span>
+            </button>
+            <p id="lblEnableMic" class="text-xs text-gray-500 mt-4 text-center">Enable microphone for voice mode</p>
+            <label class="text-sm text-slate-300"><input id="soundToggle" type="checkbox" checked onchange="state.sound=this.checked; saveSettings(); cancelSpeech()"> <span id="lblSound">Read questions and play sounds</span></label>
+            <p id="iosInstallHint" class="hidden text-xs text-blue-300 mt-2 text-center">To install: tap Share, then &ldquo;Add to Home Screen&rdquo;</p>
+        </div>
+    </div>
+
+    <div id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" class="screen-overlay hidden bg-slate-900 z-[60] flex flex-col items-center justify-center p-6 text-center">
+        <h2 id="pauseTitle" class="text-2xl font-bold mb-6">Mission Paused</h2>
+        <button id="btnResume" onclick="resumeGame()" class="w-64 py-3 bg-blue-600 rounded-full mb-4">Resume Mission</button>
+        <button id="btnPauseQuit" onclick="quitGame()" class="w-64 py-3 bg-slate-700 rounded-full">Return to Base</button>
+    </div>
+    <!-- Separate Hall of Fame Screen -->
+    <div id="hallOfFameScreen" class="screen-overlay hidden absolute inset-0 bg-slate-900 z-50 flex flex-col items-center p-6">
+        <div class="mt-4 mb-6 text-center">
+            <h2 id="lblHallTitle" class="text-2xl font-bold mb-1 text-yellow-400"><i class="fa-solid fa-trophy mr-2"></i>Hall of Fame</h2>
+            <p id="lblAchievements" class="text-xs text-gray-400">Your Achievements</p>
+        </div>
+
+        <div class="badge-grid w-full max-w-md flex-1">
+            <!-- Row 1 -->
             <div id="badge-pilot" class="badge-slot">
                 <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
                 <i class="fa-solid fa-rocket main-icon rocket"></i>
-                <div class="badge-title" data-i18n="badgePilot">Rocket&#10;Pilot</div>
+                <div class="badge-title">Rocket<br>Pilot</div>
                 <div class="badge-pts">200 pts</div>
             </div>
             <div id="badge-commander" class="badge-slot">
                 <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
                 <i class="fa-solid fa-user-astronaut main-icon astro"></i>
-                <div class="badge-title" data-i18n="badgeCommander">Mission&#10;Cmdr</div>
+                <div class="badge-title">Mission<br>Cmdr</div>
                 <div class="badge-pts">500 pts</div>
             </div>
             <div id="badge-legend" class="badge-slot">
                 <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
                 <i class="fa-solid fa-crown main-icon crown"></i>
-                <div class="badge-title" data-i18n="badgeLegend">Galactic&#10;Legend</div>
+                <div class="badge-title">Galactic<br>Legend</div>
                 <div class="badge-pts">1000 pts</div>
             </div>
+            <!-- Row 2 -->
             <div id="badge-navigator" class="badge-slot">
                 <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
                 <i class="fa-solid fa-compass main-icon compass"></i>
-                <div class="badge-title" data-i18n="badgeNavigator">Nebula&#10;Nav</div>
+                <div class="badge-title">Nebula<br>Nav</div>
                 <div class="badge-pts">1500 pts</div>
             </div>
             <div id="badge-supernova" class="badge-slot">
                 <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
                 <i class="fa-solid fa-sun main-icon sun"></i>
-                <div class="badge-title" data-i18n="badgeSupernova">Supernova&#10;Spec</div>
+                <div class="badge-title">Supernova<br>Spec</div>
                 <div class="badge-pts">2000 pts</div>
             </div>
             <div id="badge-master" class="badge-slot">
                 <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
                 <i class="fa-solid fa-infinity main-icon infinity"></i>
-                <div class="badge-title" data-i18n="badgeMaster">Universal&#10;Master</div>
+                <div class="badge-title">Universal<br>Master</div>
                 <div class="badge-pts">3000 pts</div>
             </div>
         </div>
 
-        <button onclick="closeHall()" class="mt-auto mb-2 w-full max-w-sm min-h-[52px] py-4 bg-slate-700 active:bg-slate-600 rounded-full font-bold border border-slate-500 flex items-center justify-center">
-            <i class="fa-solid fa-arrow-left mr-2"></i><span data-i18n="returnBase">Return to Base</span>
+        <p id="storageNotice" role="status" class="storage-notice"></p>
+        <button onclick="closeHallOfFame()" id="btnReturnHall" class="mt-4 w-full max-w-sm py-4 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500 flex items-center justify-center">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Return to Base
         </button>
-    </section>
+    </div>
 
-    <!-- ============ Game ============ -->
-    <section id="gameScreen" class="screen screen-pad flex-col items-center">
-        <!-- Header / stats -->
-        <div class="w-full max-w-md flex-none flex justify-between items-center relative">
-            <div class="flex flex-col">
-                <span data-i18n="score" class="text-xs text-blue-300 uppercase tracking-widest">Score</span>
-                <span id="scoreDisplay" class="text-2xl font-bold text-blue-400">0</span>
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen-overlay hidden absolute inset-0 bg-slate-900/95 z-[60] flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div class="mb-4">
+            <i class="fa-solid fa-medal text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] bounce"></i>
+        </div>
+        <h2 id="lblMissionComplete" class="text-3xl font-bold text-white mb-1">Mission Complete!</h2>
+        <p id="rankTitle" class="text-xl text-purple-300 font-bold mb-2">Rank: Space Cadet</p>
+        <div id="newBadgeAlert" class="hidden bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 rounded-lg px-3 py-1 text-sm font-bold mb-4 animate-pulse">
+            New Badge Earned!
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div id="lblFinalScore" class="text-gray-400 text-xs uppercase">Final Score</div>
+                <div id="finalScore" class="text-2xl font-bold text-blue-400">0</div>
             </div>
-
-            <div id="missionStatus" class="absolute left-1/2 -translate-x-1/2 top-1 bg-slate-800/80 px-4 py-1 rounded-full border border-slate-600 hidden whitespace-nowrap">
-                <span id="statusIcon" class="mr-2 text-yellow-400"></span>
-                <span id="statusValue" class="font-mono text-xl text-white">60s</span>
-            </div>
-
-            <div class="flex flex-col items-end">
-                <span data-i18n="streak" class="text-xs text-yellow-300 uppercase tracking-widest">Streak</span>
-                <div class="flex gap-1" id="streakContainer"></div>
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div id="lblAccuracy" class="text-gray-400 text-xs uppercase">Accuracy</div>
+                <div id="finalAccuracy" class="text-2xl font-bold text-green-400">0%</div>
             </div>
         </div>
 
-        <!-- Scrollable play area: m-auto centres it when it fits and lets it scroll when it doesn't -->
-        <div id="gameArea" class="flex-1 min-h-0 w-full scroll-y flex flex-col items-center">
-            <div class="m-auto w-full max-w-md flex flex-col items-center py-2">
+        <p id="resultStorageNotice" role="status" class="storage-notice"></p>
+        <button onclick="resetToMenu()" id="btnReturnOver" class="w-64 py-3 bg-slate-700 hover:bg-slate-600 rounded-full font-bold transition-colors border border-slate-500">
+            <i class="fa-solid fa-house mr-2"></i> Return to Base
+        </button>
+    </div>
 
-                <!-- Mascot (mt reserves room for the speech bubble) -->
-                <div class="mt-12 mb-4 short:mb-2 relative">
-                    <div id="mascot" class="text-6xl short:text-5xl">🛸</div>
-                    <div id="speechBubble" role="status" aria-live="polite" class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[85vw] text-center bg-white text-slate-900 px-4 py-2 rounded-2xl opacity-0 transition-opacity duration-300 font-bold border-4 border-blue-400 z-20"></div>
-                </div>
+    <script>
+        // --- Translations ---
+        const i18n = {
+            'en-US': {
+                title: "GALACTIC<br>MULTIPLIER",
+                missionControl: "Mission Control",
+                viewHall: "View Hall of Fame",
+                flightDrill: "Flight Drill",
+                liveMission: "Live Mission",
+                multiply: "Multiply",
+                divide: "Divide",
+                selectTargets: "Select Target Numbers:",
+                selectMission: "Select Mission Type:",
+                startDrill: "Start Drill",
+                launchMission: "Launch Mission",
+                enableMic: "Enable microphone for voice mode",
+                score: "Score",
+                streak: "Streak",
+                whatIs: "What is...",
+                tapSpeak: "Tap to speak answer",
+                listening: "Listening...",
+                keypad: "Use Keypad Instead",
+                closeKeypad: "Close Keypad",
+                abort: "Abort Mission",
+                pause: "Pause", paused: "Mission Paused", resume: "Resume Mission", finish: "Finish Drill",
+                blitz: "1 Min Blitz", twenty: "20 Questions", useVoice: "Use Microphone",
+                sound: "Read questions and play sounds",
+                storage: "Progress cannot be saved in this browser. You can still play for this visit.",
+                ranks: ["Space Cadet", "Rocket Pilot", "Mission Commander", "Galactic Legend", "Nebula Navigator", "Supernova Specialist", "Universal Master"],
+                questionMul: (n1, n2) => `What is ${n1} times ${n2}?`,
+                questionDiv: (n1, n2) => `What is ${n1} divided by ${n2}?`,
+                correct: (ans) => `The answer is ${ans}`,
+                praise: ["Awesome!", "Stellar!", "Cosmic!", "Perfect!", "Nice work!"],
+                miss: "Miss!",
+                finalScore: "Final Score",
+                accuracy: "Accuracy",
+                returnBase: "Return to Base",
+                hallTitle: "Hall of Fame",
+                achievements: "Your Achievements",
+                missionComplete: "Mission Complete!",
+                rank: "Rank: ",
+                newBadge: "New Badge Earned!",
+                voiceUnsupported: "Voice not supported here - use the keypad",
+                micDenied: "Mic blocked - use the keypad",
+                micStarting: "Starting mic\u2026",
+                micRetry: "Didn\u2019t catch that - tap the mic",
+                micNetwork: "Voice needs internet - use the keypad",
+                heard: "Heard: ",
+                iosHint: "To install: tap Share, then \u201cAdd to Home Screen\u201d",
+                newBadgeSpoken: (rank) => `Mission Complete! New Badge Earned: ${rank}!`,
+                completeSpoken: (rank) => `Mission Complete! You achieved the rank of ${rank}`
+            },
+            'de-DE': {
+                title: "GALAKTISCHER<br>MULTIPLIKATOR",
+                missionControl: "Missionskontrolle",
+                viewHall: "Ruhmeshalle ansehen",
+                flightDrill: "Flugübung",
+                liveMission: "Echte Mission",
+                multiply: "Multiplizieren",
+                divide: "Dividieren",
+                selectTargets: "Zielzahlen wählen:",
+                selectMission: "Missionstyp wählen:",
+                startDrill: "Übung starten",
+                launchMission: "Mission starten",
+                enableMic: "Mikrofon aktivieren",
+                score: "Punkte",
+                streak: "Serie",
+                whatIs: "Wieviel ist...",
+                tapSpeak: "Tippen zum Sprechen",
+                listening: "Zuhören...",
+                keypad: "Tastatur benutzen",
+                closeKeypad: "Tastatur schließen",
+                abort: "Mission abbrechen",
+                pause: "Pause", paused: "Mission pausiert", resume: "Mission fortsetzen", finish: "Übung beenden",
+                blitz: "1 Minute", twenty: "20 Fragen", useVoice: "Mikrofon benutzen",
+                sound: "Fragen vorlesen und Töne abspielen",
+                storage: "Fortschritt kann hier nicht gespeichert werden. Du kannst trotzdem für diesen Besuch spielen.",
+                ranks: ["Weltraumkadett", "Raketenpilot", "Missionskommandant", "Galaktische Legende", "Nebel-Navigator", "Supernova-Spezialist", "Meister des Universums"],
+                questionMul: (n1, n2) => `Wieviel ist ${n1} mal ${n2}?`,
+                questionDiv: (n1, n2) => `Wieviel ist ${n1} geteilt durch ${n2}?`,
+                correct: (ans) => `Die Antwort ist ${ans}`,
+                praise: ["Super!", "Klasse!", "Kosmisch!", "Perfekt!", "Gut gemacht!"],
+                miss: "Daneben!",
+                finalScore: "Endpunktzahl",
+                accuracy: "Genauigkeit",
+                returnBase: "Zur Basis",
+                hallTitle: "Ruhmeshalle",
+                achievements: "Deine Erfolge",
+                missionComplete: "Mission erfüllt!",
+                rank: "Rang: ",
+                newBadge: "Neuer Rang erreicht!",
+                voiceUnsupported: "Sprache wird hier nicht unterst\u00fctzt - bitte Tastatur nutzen",
+                micDenied: "Mikrofon blockiert - bitte Tastatur nutzen",
+                micStarting: "Mikrofon startet\u2026",
+                micRetry: "Nicht verstanden - tippe aufs Mikrofon",
+                micNetwork: "Sprache braucht Internet - bitte Tastatur nutzen",
+                heard: "Geh\u00f6rt: ",
+                iosHint: "Installieren: Teilen tippen, dann \u201cZum Home-Bildschirm\u201d",
+                newBadgeSpoken: (rank) => `Mission erfüllt! Neuer Rang: ${rank}!`,
+                completeSpoken: (rank) => `Mission erfüllt! Du hast den Rang ${rank} erreicht`
+            }
+        };
 
-                <!-- Question -->
-                <div class="text-center mb-4 short:mb-2 w-full">
-                    <div data-i18n="whatIs" class="text-xl short:text-base text-purple-300 mb-2">What is...</div>
-                    <div id="questionBox" class="flex items-center justify-center gap-3 text-[clamp(2.5rem,14vw,3.75rem)] font-bold neon-text bg-slate-900/50 px-4 py-5 short:py-3 rounded-3xl border border-purple-500/30 backdrop-blur-sm">
-                        <span id="num1" class="text-purple-400">?</span>
-                        <span id="operatorSign" class="text-white text-[0.7em]">×</span>
-                        <span id="num2" class="text-purple-400">?</span>
-                    </div>
-                </div>
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-                <!-- Answer shown -->
-                <div class="h-14 short:h-11 flex items-center justify-center mb-2 w-full">
-                    <div id="userAnswerDisplay" class="text-4xl short:text-3xl font-bold text-yellow-400 tracking-widest min-h-[2.5rem]"></div>
-                </div>
+        // --- PWA Service Worker Registration ---
+        let appUpdateReady = false;
+        if ('serviceWorker' in navigator) {
+            let wasControlled = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!wasControlled) { wasControlled = true; return; }
+                appUpdateReady = true;
+                // Keep an active mission intact; returning to base applies the update.
+                if (!state.isPlaying) window.location.reload();
+            });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker failed', err));
+            });
+        }
 
-                <!-- Voice controls (hidden while the keypad is open) -->
-                <div id="voiceControls" class="w-full flex flex-col items-center gap-3 short:gap-2">
-                    <button id="micBtn" aria-label="Microphone" class="w-20 h-20 short:w-16 short:h-16 rounded-full bg-red-500 text-white flex items-center justify-center text-3xl shadow-lg border-4 border-red-400 transition-colors">
-                        <i class="fa-solid fa-microphone"></i>
-                    </button>
-                    <p id="micStatus" class="text-sm text-gray-400"></p>
-                    <button id="toggleKeypadBtn" class="min-h-[44px] px-4 text-sm text-blue-300 underline decoration-dotted"></button>
-                </div>
+        // --- PWA Install Logic ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('installBtn');
+            if (btn) btn.classList.remove('hidden');
+        });
 
-                <button onclick="quitGame()" id="btnAbort" data-i18n="abort" class="min-h-[44px] px-4 text-xs text-red-400/70 active:text-red-400">Abort Mission</button>
-            </div>
-        </div>
+        async function installApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+            document.getElementById('installBtn').classList.add('hidden');
+        }
 
-        <!-- Keypad: in normal flow so it pushes the play area up instead of covering it -->
-        <div id="keypad" class="hidden flex-none w-full px-2 pt-3 bg-slate-900/95 border-t border-slate-700 rounded-t-3xl">
-            <div class="grid grid-cols-3 gap-3 short:gap-2 max-w-md mx-auto">
-                <button class="key-btn" onclick="addKey(1)">1</button>
-                <button class="key-btn" onclick="addKey(2)">2</button>
-                <button class="key-btn" onclick="addKey(3)">3</button>
-                <button class="key-btn" onclick="addKey(4)">4</button>
-                <button class="key-btn" onclick="addKey(5)">5</button>
-                <button class="key-btn" onclick="addKey(6)">6</button>
-                <button class="key-btn" onclick="addKey(7)">7</button>
-                <button class="key-btn" onclick="addKey(8)">8</button>
-                <button class="key-btn" onclick="addKey(9)">9</button>
-                <button class="key-btn !bg-red-500/20 !text-red-300 !border-red-500/30 !text-xl" onclick="backspaceKey()" aria-label="Delete"><i class="fa-solid fa-delete-left"></i></button>
-                <button class="key-btn" onclick="addKey(0)">0</button>
-                <button class="key-btn !bg-green-500/20 !text-green-300 !border-green-500/30 !text-xl" onclick="checkAnswer(true)">OK</button>
-            </div>
-            <button onclick="toggleKeypad()" id="btnCloseKeypad" data-i18n="closeKeypad" class="w-full min-h-[44px] text-center mt-1 text-gray-400 text-sm">Close Keypad</button>
-        </div>
-    </section>
+        // --- Wake Lock (Prevent Screen Sleep) ---
+        let wakeLock = null;
+        async function requestWakeLock() {
+            if (!navigator.wakeLock || !state.isPlaying || state.paused || wakeLock || document.visibilityState !== 'visible') return;
+            const session = state.session;
+            try {
+                const lock = await navigator.wakeLock.request('screen');
+                if (session !== state.session || !state.isPlaying || state.paused || wakeLock) { await lock.release(); return; }
+                wakeLock = lock;
+                lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+            } catch {}
+        }
+        function releaseWakeLock() {
+            const lock = wakeLock;
+            wakeLock = null;
+            if (lock) lock.release().catch(() => {});
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') pauseGame();
+        });
+        window.addEventListener('pagehide', () => { pauseGame(); releaseWakeLock(); });
 
-    <!-- ============ Game over ============ -->
-    <section id="overScreen" class="screen screen-pad scroll-y flex-col items-center bg-slate-900/95 text-center">
-        <div class="m-auto w-full flex flex-col items-center">
-            <div class="mb-4">
-                <i class="fa-solid fa-medal text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] bounce"></i>
-            </div>
-            <h2 data-i18n="missionComplete" class="text-3xl font-bold text-white mb-1">Mission Complete!</h2>
-            <p id="rankTitle" class="text-xl text-purple-300 font-bold mb-2"></p>
-            <div id="newBadgeAlert" data-i18n="newBadge" class="hidden bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 rounded-lg px-3 py-1 text-sm font-bold mb-4 animate-pulse">New Badge Earned!</div>
+        // --- Game State ---
+        const state = {
+            score: 0,
+            streak: 0,
+            currentQ: { displayN1: 0, displayN2: 0, ans: 0, speech: "", rawN1: 0, rawN2: 0 },
+            voiceSupported: false,
+            keypadInput: "",
+            usingKeypad: true,
+            mode: 'practice', 
+            operation: 'multiply', 
+            testType: 'time', 
+            practiceNums: [2, 3, 4, 5], 
+            isPlaying: false,
+            timer: null,
+            timeRemaining: 60,
+            questionsCount: 0,
+            correctCount: 0,
+            targetQuestions: 20,
+            badges: [],
+            lastQuestionKey: null,
+            mistakesQueue: [],
+            answerLocked: false,
+            gameEnded: false,
+            timerEndAt: 0,
+            bubbleTimer: null,
+            // Microphone controller state (see the controller below)
+            micState: 'off', // off | starting | listening | stopping | blocked | unsupported
+            micIntent: false,
+            micPendingStart: false,
+            micMuted: false,
+            micRestarts: 0,
+            micRetryHint: false,
+            micPermission: 'unknown', // unknown | granted | denied
+            micStartTimer: null,
+            micWatchdog: null,
+            micResumeWanted: false,
+            speaking: false,
+            speechTimer: null,
+            activeUtterance: null,
+            language: 'en-US',
+            session: 0, questionId: 0, pendingTimers: new Set(), speechEpoch: 0,
+            paused: false, remainingMs: 60000, storageAvailable: true, sound: true, preferredInput: 'keypad'
+        };
 
-            <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
-                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <div data-i18n="finalScore" class="text-gray-400 text-xs uppercase">Final Score</div>
-                    <div id="finalScore" class="text-2xl font-bold text-blue-400">0</div>
-                </div>
-                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <div data-i18n="accuracy" class="text-gray-400 text-xs uppercase">Accuracy</div>
-                    <div id="finalAccuracy" class="text-2xl font-bold text-green-400">0%</div>
-                </div>
-            </div>
 
-            <button onclick="resetToMenu()" class="w-full max-w-xs min-h-[52px] py-3 bg-slate-700 active:bg-slate-600 rounded-full font-bold border border-slate-500">
-                <i class="fa-solid fa-house mr-2"></i><span data-i18n="returnBase">Return to Base</span>
-            </button>
-        </div>
-    </section>
+        function schedule(callback, ms) {
+            const session = state.session, questionId = state.questionId;
+            const id = setTimeout(() => {
+                state.pendingTimers.delete(id);
+                if (session === state.session && questionId === state.questionId) callback();
+            }, ms);
+            state.pendingTimers.add(id);
+            return id;
+        }
+        function cancelSpeech() {
+            state.speechEpoch++;
+            state.speaking = false;
+            state.activeUtterance = null;
+            if (state.speechTimer) clearTimeout(state.speechTimer);
+            state.speechTimer = null;
+            try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch {}
+        }
+        function cancelQuestionActivity() {
+            for (const id of state.pendingTimers) clearTimeout(id);
+            state.pendingTimers.clear();
+            micRequestStop();
+            cancelSpeech();
+        }
+        function cancelActivity() {
+            cancelQuestionActivity();
+            clearInterval(state.timer);
+            state.timer = null;
+            state.micResumeWanted = false;
+            releaseWakeLock();
+        }
+        function disposeRecognition() {
+            if (!recognition) return;
+            const old = recognition;
+            recognition = null;
+            old.onstart = old.onend = old.onresult = old.onerror = null;
+            try { old.abort(); } catch {}
+        }
+        function updateAnswerControls() {
+            const disabled = !state.isPlaying || state.paused || state.answerLocked;
+            for (const btn of document.querySelectorAll('#keypad .key-btn')) btn.disabled = disabled;
+            document.getElementById('micBtn').disabled = disabled;
+        }
+        function tickTimer() {
+            if (!state.isPlaying || state.paused) return;
+            state.remainingMs = Math.max(0, state.timerEndAt - performance.now());
+            state.timeRemaining = Math.ceil(state.remainingMs / 1000);
+            const el = document.getElementById('statusValue');
+            el.innerText = state.timeRemaining + 's';
+            el.classList.toggle('text-red-400', state.timeRemaining <= 10);
+            if (!state.remainingMs) endGame();
+        }
+        function pauseGame() {
+            if (!state.isPlaying || state.paused) return;
+            if (state.mode === 'test' && state.testType === 'time') {
+                tickTimer();
+                if (!state.isPlaying) return;
+            }
+            state.paused = true;
+            state.resumeKeypad = state.usingKeypad;
+            cancelActivity();
+            closeKeypad();
+            document.getElementById('pauseScreen').classList.remove('hidden');
+            updateAnswerControls();
+        }
+        function resumeGame() {
+            if (!state.paused || !state.isPlaying) return;
+            state.paused = false;
+            unlockAudio();
+            document.getElementById('pauseScreen').classList.add('hidden');
+            if (state.resumeKeypad) openKeypad();
+            if (state.answerLocked) nextQuestion();
+            else { updateAnswerControls(); speak(state.currentQ.speech, true); }
+            if (state.mode === 'test' && state.testType === 'time' && state.isPlaying) startTimer();
+            requestWakeLock();
+        }
+        function updateStorageNotice() {
+            for (const id of ['storageNotice', 'resultStorageNotice']) document.getElementById(id).textContent =
+                state.storageAvailable ? '' : i18n[state.language].storage;
+        }
+        function saveSettings() {
+            try {
+                const { language, mode, operation, testType, practiceNums, sound } = state;
+                localStorage.setItem('galactic_settings', JSON.stringify({ language, mode, operation, testType, practiceNums, sound,
+                    inputMode: state.preferredInput }));
+            } catch { state.storageAvailable = false; updateStorageNotice(); }
+        }
+        function loadSettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('galactic_settings') || '{}');
+                if (!saved || typeof saved !== 'object') return;
+                if (['en-US', 'de-DE'].includes(saved.language)) state.language = saved.language;
+                if (['practice', 'test'].includes(saved.mode)) state.mode = saved.mode;
+                if (['multiply', 'divide'].includes(saved.operation)) state.operation = saved.operation;
+                if (['time', 'count'].includes(saved.testType)) state.testType = saved.testType;
+                if (typeof saved.sound === 'boolean') state.sound = saved.sound;
+                if (saved.inputMode === 'voice' && state.voiceSupported) { state.usingKeypad = false; state.preferredInput = 'voice'; }
+                if (Array.isArray(saved.practiceNums)) {
+                    const nums = [...new Set(saved.practiceNums.filter(n => Number.isInteger(n) && n >= 2 && n <= 12))];
+                    if (nums.length) state.practiceNums = nums;
+                }
+                document.documentElement.lang = state.language;
+                if (recognition) recognition.lang = state.language;
+            } catch { state.storageAvailable = false; }
+        }
+        function updateSelections() {
+            for (const [prefix, selected] of [
+                ['btnMode', state.mode === 'practice' ? 'Practice' : 'Test'],
+                ['btnOp', state.operation === 'multiply' ? 'Multiply' : 'Divide'],
+                ['btnTest', state.testType === 'time' ? 'Time' : 'Count']
+            ]) for (const btn of document.querySelectorAll('button[id^="' + prefix + '"]')) {
+                btn.setAttribute('aria-pressed', String(btn.id === prefix + selected));
+            }
+        }
 
-    <script src="speech-numbers.js"></script>
-    <script src="app.js"></script>
+        // --- Language Utils ---
+        function toggleLanguage() {
+            state.language = state.language === 'en-US' ? 'de-DE' : 'en-US';
+            document.documentElement.lang = state.language;
+            document.getElementById('langBtn').innerText = state.language === 'en-US' ? '🇺🇸' : '🇩🇪';
+            updateTexts();
+            saveSettings();
+            // Update recognition language immediately
+            if (recognition) recognition.lang = state.language;
+        }
+
+        function updateTexts() {
+            const t = i18n[state.language];
+            document.documentElement.lang = state.language;
+            document.getElementById('langBtn').innerText = state.language === 'en-US' ? '🇺🇸' : '🇩🇪';
+            document.getElementById('langBtn').setAttribute('aria-label', state.language === 'en-US' ? 'Switch to German' : 'Zu Englisch wechseln');
+            document.getElementById('appTitle').innerHTML = t.title;
+            document.getElementById('lblMissionControl').innerText = t.missionControl;
+            document.getElementById('btnViewHall').innerText = t.viewHall;
+            document.getElementById('btnModePractice').innerText = t.flightDrill;
+            document.getElementById('btnModeTest').innerText = t.liveMission;
+            document.getElementById('lblMultiply').innerText = t.multiply;
+            document.getElementById('lblDivide').innerText = t.divide;
+            document.getElementById('lblSelectTargets').innerText = t.selectTargets;
+            document.getElementById('lblSelectMission').innerText = t.selectMission;
+            document.getElementById('startBtnText').innerText = state.mode === 'practice' ? t.startDrill : t.launchMission;
+            document.getElementById('lblEnableMic').innerText = t.enableMic;
+            document.getElementById('lblScore').innerText = t.score;
+            document.getElementById('lblStreak').innerText = t.streak;
+            document.getElementById('lblWhatIs').innerText = t.whatIs;
+            renderMic();
+            document.getElementById('toggleKeypadBtn').innerText = state.usingKeypad ? t.closeKeypad : t.keypad;
+            document.getElementById('btnCloseKeypad').innerText = t.closeKeypad;
+            document.getElementById('btnAbort').innerText = t.abort;
+            document.getElementById('lblFinalScore').innerText = t.finalScore;
+            document.getElementById('lblAccuracy').innerText = t.accuracy;
+            document.getElementById('btnReturnOver').innerHTML = `<i class="fa-solid fa-house mr-2"></i> ${t.returnBase}`;
+            document.getElementById('lblHallTitle').innerHTML = `<i class="fa-solid fa-trophy mr-2"></i>${t.hallTitle}`;
+            document.getElementById('lblAchievements').innerText = t.achievements;
+            document.getElementById('btnReturnHall').innerHTML = `<i class="fa-solid fa-arrow-left mr-2"></i> ${t.returnBase}`;
+            document.getElementById('lblMissionComplete').innerText = t.missionComplete;
+            const iosHint = document.getElementById('iosInstallHint');
+            if (iosHint) iosHint.innerText = t.iosHint;
+            if (!state.voiceSupported) document.getElementById('micStatus').innerText = t.voiceUnsupported;
+            document.getElementById('btnPause').innerText = t.pause;
+            document.getElementById('pauseTitle').innerText = t.paused;
+            document.getElementById('btnResume').innerText = t.resume;
+            document.getElementById('btnPauseQuit').innerText = t.returnBase;
+            document.getElementById('btnFinish').innerText = t.finish;
+            document.getElementById('lblBlitz').innerText = t.blitz;
+            document.getElementById('lblTwenty').innerText = t.twenty;
+            document.getElementById('lblSound').innerText = t.sound;
+            document.getElementById('soundToggle').checked = state.sound;
+            if (state.usingKeypad && state.voiceSupported) document.getElementById('toggleKeypadBtn').innerText = t.useVoice;
+            const names = ['pilot', 'commander', 'legend', 'navigator', 'supernova', 'master'];
+            names.forEach((id, i) => document.querySelector('#badge-' + id + ' .badge-title').textContent = t.ranks[i + 1]);
+            updateStorageNotice();
+            
+            // Check rank title text update (only if game over screen visible really matters, but good to have)
+            const rankEl = document.getElementById('rankTitle');
+            const rankText = rankEl.textContent || '';
+            if(rankText.includes(":")) {
+               const currentRankName = rankText.split(":")[1].trim(); // simple preserve
+               rankEl.innerText = t.rank + " " + currentRankName;
+            }
+        }
+
+        // --- Persistence (Load Badges) ---
+        function loadBadges() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('galactic_badges') || '[]');
+                const valid = ['pilot', 'commander', 'legend', 'navigator', 'supernova', 'master'];
+                state.badges = Array.isArray(saved) ? [...new Set(saved.filter(id => valid.includes(id)))] : [];
+            } catch { state.storageAvailable = false; }
+            renderBadges();
+        }
+
+        function saveBadge(badgeId) {
+            if (!state.badges.includes(badgeId)) {
+                state.badges.push(badgeId);
+                try {
+                    localStorage.setItem('galactic_badges', JSON.stringify(state.badges));
+                } catch (e) {
+                    state.storageAvailable = false;
+                    updateStorageNotice();
+                }
+                renderBadges();
+                return true;
+            }
+            return false;
+        }
+
+        function renderBadges() {
+            const map = {
+                'pilot': 'badge-pilot',
+                'commander': 'badge-commander',
+                'legend': 'badge-legend',
+                'navigator': 'badge-navigator',
+                'supernova': 'badge-supernova',
+                'master': 'badge-master'
+            };
+            for (const [id, elId] of Object.entries(map)) {
+                if (state.badges.includes(id)) {
+                    document.getElementById(elId).classList.add('earned');
+                }
+            }
+        }
+
+        // --- Navigation ---
+        function openHallOfFame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('hallOfFameScreen').classList.remove('hidden');
+        }
+
+        function closeHallOfFame() {
+            document.getElementById('hallOfFameScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        // --- Voice Setup ---
+        const synth = window.speechSynthesis;
+        let recognition = null;
+
+        // --- Microphone controller ---
+        // The recognizer is owned by this small state machine and nothing else
+        // starts or stops it. The previous version scattered start/stop calls
+        // across speak(), recognition.onend, the mic button and schedule()s,
+        // and inferred the UI from two booleans that routinely disagreed with
+        // the real recognizer. Symptoms: the mic "closed itself" after a few
+        // silent seconds and the next tap then did nothing (a stale
+        // wantListening=true made the tap a stop instead of a start), start()
+        // calls landing while a stop was still in flight threw
+        // InvalidStateError and the intent was lost, and timers from an
+        // earlier question could open the mic during the next one.
+        const MAX_MIC_RESTARTS = 2;
+
+        function canListen() {
+            return state.isPlaying && !state.paused && document.visibilityState === 'visible' && !state.usingKeypad && !state.answerLocked && !state.speaking && !state.micMuted;
+        }
+
+        function clearHeard() {
+            const el = document.getElementById('heardText');
+            if (el) el.textContent = '';
+            const disp = document.getElementById('userAnswerDisplay');
+            if (disp) disp.classList.remove('opacity-50');
+        }
+
+        function showHeard(transcript) {
+            const el = document.getElementById('heardText');
+            if (el) el.textContent = i18n[state.language].heard + '\u201c' + transcript + '\u201d';
+            const n = parseSpokenNumber(transcript);
+            if (n !== null) {
+                const disp = document.getElementById('userAnswerDisplay');
+                disp.innerText = n;
+                disp.classList.add('opacity-50');
+            }
+        }
+
+        // Single writer for everything the mic button and status line show.
+        function renderMic() {
+            const btn = document.getElementById('micBtn');
+            const status = document.getElementById('micStatus');
+            if (!btn || !status) return;
+            const t = i18n[state.language];
+            btn.setAttribute('aria-pressed', String(state.micState === 'listening'));
+            btn.classList.remove('pulse-mic', 'bg-green-500', 'border-green-400', 'bg-red-500', 'border-red-400', 'bg-amber-500', 'border-amber-400', 'bg-slate-600', 'border-slate-500');
+            status.classList.remove('text-green-400');
+            if (!state.voiceSupported) { status.innerText = t.voiceUnsupported; return; }
+            if (state.micState === 'listening') {
+                btn.classList.add('pulse-mic', 'bg-green-500', 'border-green-400');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                status.innerText = t.listening;
+                status.classList.add('text-green-400');
+            } else if (state.micState === 'starting') {
+                btn.classList.add('bg-amber-500', 'border-amber-400');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                status.innerText = t.micStarting;
+            } else if (state.micState === 'blocked') {
+                btn.classList.add('bg-slate-600', 'border-slate-500');
+                btn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+                status.innerText = t.micDenied;
+            } else { // off / stopping
+                btn.classList.add('bg-red-500', 'border-red-400');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                status.innerText = state.micRetryHint ? t.micRetry : t.tapSpeak;
+            }
+            btn.setAttribute('aria-label', status.innerText);
+        }
+
+        function micRequestStart(source) {
+            if (!recognition) return;
+            // Safari may require a fresh tap for each recognition session.
+            // Do not reopen it from TTS callbacks or silence/retry timers on iOS.
+            if (isIOS && source !== 'user') { renderMic(); return; }
+            if (!canListen()) return;
+            if (state.micPermission === 'denied' && source === 'auto') { state.micState = 'blocked'; renderMic(); return; }
+            if (state.micState === 'starting' || state.micState === 'listening') return;
+            if (state.micState === 'stopping') {
+                if (isIOS && source === 'user') {
+                    // Recreate synchronously so this tap isn't lost waiting for Safari's onend.
+                    disposeRecognition();
+                    state.micState = 'off';
+                    initializeRecognition();
+                } else { state.micPendingStart = true; state.micIntent = true; return; }
+            }
+            state.micIntent = true;
+            state.micRetryHint = false;
+            state.micState = 'starting';
+            renderMic();
+            clearTimeout(state.micWatchdog);
+            state.micWatchdog = schedule(() => {
+                state.micWatchdog = null;
+                if (state.micState === 'starting') micFailed('timeout');
+            }, 10000);
+            try {
+                recognition.start();
+            } catch (e) {
+                micFailed(e.name === 'NotAllowedError' || e.name === 'SecurityError' ? 'not-allowed' : 'start-failed');
+            }
+        }
+
+        function micFailed(error) {
+            clearTimeout(state.micWatchdog);
+            state.micWatchdog = null;
+            state.micIntent = false;
+            state.micPendingStart = false;
+            const denied = ['not-allowed', 'service-not-allowed', 'audio-capture'].includes(error);
+            if (denied) state.micPermission = 'denied';
+            state.micState = denied ? 'blocked' : 'off';
+            state.micRetryHint = !denied;
+            try { recognition?.abort(); } catch {}
+            renderMic();
+            if (state.isPlaying && !state.usingKeypad) openKeypad();
+            const t = i18n[state.language];
+            if (state.isPlaying) showBubble(denied ? t.micDenied : error === 'network' ? t.micNetwork : t.micRetry, 2500);
+        }
+
+        function micRequestStop() {
+            state.micIntent = false;
+            state.micPendingStart = false;
+            clearTimeout(state.micWatchdog);
+            state.micWatchdog = null;
+            if (state.micStartTimer) { clearTimeout(state.micStartTimer); state.micStartTimer = null; }
+            clearHeard();
+            if (!recognition) return;
+            if (state.micState === 'listening' || state.micState === 'starting') {
+                state.micState = 'stopping';
+                try { recognition.stop(); } catch (e) {}
+            } else if (state.micState !== 'blocked') {
+                state.micState = 'off';
+            }
+            renderMic();
+        }
+
+        // Keep the mic in sync with tab visibility: Chrome kills recognition
+        // in hidden tabs, which used to leave the state machine in limbo.
+        document.addEventListener('visibilitychange', () => {
+            if (!recognition) return;
+            if (document.visibilityState === 'hidden') {
+                if (state.micState === 'listening' || state.micState === 'starting') {
+                    state.micResumeWanted = state.micIntent;
+                    state.micIntent = false;
+                    state.micState = 'stopping';
+                    try { recognition.stop(); } catch (e) {}
+                    state.micState = 'off';
+                    renderMic();
+                }
+            } else if (state.micResumeWanted) {
+                state.micResumeWanted = false;
+                micRequestStart('auto');
+            }
+        });
+
+        function initializeRecognition() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = state.language; // Initial lang
+            recognition.interimResults = true; // live feedback while the child speaks
+            recognition.maxAlternatives = 3;
+            state.voiceSupported = true;
+            const owner = recognition;
+            const session = state.session;
+
+            // Know the permission state up front: after a denial the game must
+            // stop auto-opening the mic (that loop felt like it opening and
+            // closing by itself) while a manual tap can still retry.
+            try {
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'microphone' }).then((ps) => {
+                        if (recognition !== owner || session !== state.session) return;
+                        state.micPermission = ps.state === 'granted' ? 'granted' : (ps.state === 'denied' ? 'denied' : 'unknown');
+                        if (ps.state === 'denied') { state.micState = 'blocked'; renderMic(); }
+                        ps.onchange = () => {
+                            if (recognition !== owner || session !== state.session) return;
+                            state.micPermission = ps.state === 'granted' ? 'granted' : (ps.state === 'denied' ? 'denied' : 'unknown');
+                            if (state.micPermission === 'denied') { state.micIntent = false; state.micState = 'blocked'; renderMic(); }
+                        };
+                    }).catch(() => {});
+                }
+            } catch (e) {}
+
+            recognition.onstart = () => {
+                clearTimeout(state.micWatchdog);
+                state.micWatchdog = null;
+                if (!canListen() || !state.micIntent) { micRequestStop(); return; }
+                state.micState = 'listening';
+                renderMic();
+            };
+
+            recognition.onend = () => {
+                clearTimeout(state.micWatchdog);
+                state.micWatchdog = null;
+                if (state.micPendingStart && state.micIntent && canListen()) {
+                    state.micPendingStart = false;
+                    state.micState = 'off';
+                    micRequestStart('user');
+                    return;
+                }
+                state.micPendingStart = false;
+                if (!isIOS && state.micIntent && canListen() && state.micRestarts < MAX_MIC_RESTARTS) {
+                    // Chrome ends the session after a pause or a result; reopen
+                    // it a bounded number of times per question, with a beat in
+                    // between instead of a synchronous restart storm.
+                    state.micRestarts++;
+                    state.micState = 'off';
+                    renderMic();
+                    state.micStartTimer = schedule(() => {
+                        state.micStartTimer = null;
+                        if (state.micIntent && canListen()) micRequestStart('user');
+                    }, 250);
+                    return;
+                }
+                if (state.micIntent && canListen()) {
+                    // Gave it MAX_MIC_RESTARTS tries: settle, and say so, instead
+                    // of silently dying with a stale "Listening..." UI.
+                    state.micIntent = false;
+                    state.micRetryHint = true;
+                }
+                state.micState = state.micPermission === 'denied' ? 'blocked' : 'off';
+                renderMic();
+            };
+
+            recognition.onresult = (event) => {
+                if (!canListen() || !state.micIntent || state.micState !== 'listening') return;
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const res = event.results[i];
+                    if (res.isFinal) {
+                        state.micRestarts = 0;
+                        clearHeard();
+                        // Try every alternative: the top guess is often a word
+                        // form ("twenty four") while another is digits ("24").
+                        for (let j = 0; j < res.length; j++) {
+                            if (parseSpokenNumber(res[j].transcript) !== null) {
+                                processVoiceInput(res[j].transcript);
+                                return;
+                            }
+                        }
+                        processVoiceInput(res[0].transcript);
+                        return;
+                    }
+                    interim += res[0].transcript;
+                }
+                if (interim) showHeard(interim);
+            };
+
+            recognition.onerror = (event) => {
+                const err = event.error;
+                if (['not-allowed', 'service-not-allowed', 'audio-capture', 'network', 'language-not-supported'].includes(err)) {
+                    micFailed(err);
+                }
+                // 'no-speech' / 'aborted': onend owns the follow-up.
+            };
+            for (const name of ['onstart', 'onend', 'onresult', 'onerror']) {
+                const callback = owner[name];
+                owner[name] = event => { if (recognition === owner && session === state.session) callback(event); };
+            }
+        } else {
+            // No SpeechRecognition in this browser. This is the normal case on
+            // iPhone/iPad Safari, so make the keypad the primary input cleanly
+            // instead of leaving a dead mic button on screen.
+            state.micState = 'unsupported';
+            document.getElementById('micBtn').style.display = 'none';
+            document.getElementById('toggleKeypadBtn').style.display = 'none';
+            document.getElementById('micStatus').innerText = i18n[state.language].voiceUnsupported;
+            state.usingKeypad = true;
+        }
+
+        }
+        initializeRecognition();
+
+        // --- Configuration Logic ---
+        const grid = document.getElementById('numGrid');
+        for(let i=2; i<=12; i++) {
+            const btn = document.createElement('button');
+            btn.className = `num-toggle ${state.practiceNums.includes(i) ? 'selected' : ''}`;
+            btn.innerText = i;
+            btn.onclick = () => togglePracticeNum(i, btn);
+            btn.setAttribute('aria-pressed', String(state.practiceNums.includes(i)));
+            grid.appendChild(btn);
+        }
+
+        function togglePracticeNum(num, btn) {
+            if(state.practiceNums.includes(num)) {
+                if(state.practiceNums.length > 1) { 
+                    state.practiceNums = state.practiceNums.filter(n => n !== num);
+                    btn.classList.remove('selected');
+                }
+            } else {
+                state.practiceNums.push(num);
+                btn.classList.add('selected');
+            }
+            btn.setAttribute('aria-pressed', String(state.practiceNums.includes(num)));
+            saveSettings();
+        }
+
+        function setMode(m) {
+            state.mode = m;
+            const t = i18n[state.language];
+            document.getElementById('btnModePractice').className = m === 'practice' 
+                ? "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-blue-600 text-white shadow-lg"
+                : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
+            
+            document.getElementById('btnModeTest').className = m === 'test' 
+                ? "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-purple-600 text-white shadow-lg"
+                : "flex-1 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all";
+
+            document.getElementById('configTest').classList.toggle('hidden', m !== 'test');
+            document.getElementById('startBtnText').innerText = m === 'practice' ? t.startDrill : t.launchMission;
+            saveSettings();
+            updateSelections();
+        }
+
+        function setOperation(op) {
+            state.operation = op;
+            const btnMul = document.getElementById('btnOpMultiply');
+            const btnDiv = document.getElementById('btnOpDivide');
+            
+            if(op === 'multiply') {
+                btnMul.classList.add('active');
+                btnDiv.classList.remove('active');
+            } else {
+                btnMul.classList.remove('active');
+                btnDiv.classList.add('active');
+            }
+            saveSettings();
+            updateSelections();
+        }
+
+        function setTestType(t) {
+            state.testType = t;
+            document.getElementById('btnTestTime').classList.toggle('active', t === 'time');
+            document.getElementById('btnTestCount').classList.toggle('active', t === 'count');
+            saveSettings();
+            updateSelections();
+        }
+
+        // --- Core Game Functions ---
+        function startGame() {
+            const keypadWanted = state.preferredInput === 'keypad';
+            state.isPlaying = false;
+            state.session++;
+            cancelActivity();
+            disposeRecognition();
+            state.micState = 'off';
+            initializeRecognition();
+            state.usingKeypad = keypadWanted || !state.voiceSupported;
+            state.paused = false;
+            state.remainingMs = 60000;
+            document.body.classList.add('game-active');
+            document.getElementById('pauseScreen').classList.add('hidden');
+            document.getElementById('btnFinish').classList.toggle('hidden', state.mode !== 'practice');
+            unlockAudio();
+            if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
+            state.gameEnded = false;
+            state.answerLocked = false;
+            state.score = 0;
+            state.streak = 0;
+            state.questionsCount = 0;
+            state.correctCount = 0;
+            state.mistakesQueue = []; 
+            state.lastQuestionKey = null;
+            state.isPlaying = true;
+            state.micMuted = false;
+            state.micRestarts = 0;
+            micRequestStop();
+            
+            requestWakeLock();
+            
+            const statusEl = document.getElementById('missionStatus');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusVal = document.getElementById('statusValue');
+            const opSign = document.getElementById('operatorSign');
+
+            opSign.innerText = state.operation === 'multiply' ? '×' : '÷';
+            
+            if (state.mode === 'test') {
+                statusEl.classList.remove('hidden');
+                if(state.testType === 'time') {
+                    state.timeRemaining = 60;
+                    statusIcon.innerHTML = '<i class="fa-solid fa-hourglass-half"></i>';
+                    statusVal.innerText = "60s";
+                    startTimer();
+                } else {
+                    state.targetQuestions = 20;
+                    statusIcon.innerHTML = '<i class="fa-solid fa-list-ol"></i>';
+                    statusVal.innerText = `1/${state.targetQuestions}`;
+                }
+            } else {
+                statusEl.classList.add('hidden'); 
+            }
+            
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
+            document.getElementById('gameArea').classList.add('flex');
+            if (!state.voiceSupported) { state.usingKeypad = true; openKeypad(); }
+            else if (state.usingKeypad) { openKeypad(); }
+            else if (state.micState === 'blocked') { openKeypad(); } // permission already denied: don't make the player discover the keypad link first
+
+            updateScore();
+            nextQuestion(true);
+        }
+
+        function startTimer() {
+            clearInterval(state.timer);
+            state.timerEndAt = performance.now() + state.remainingMs;
+            tickTimer();
+            state.timer = setInterval(tickTimer, 100);
+        }
+
+        function nextQuestion(fromGesture = false) {
+            if(!state.isPlaying || state.paused) return;
+            cancelQuestionActivity();
+            state.questionId++;
+            state.answerLocked = false;
+            document.getElementById('userAnswerDisplay').classList.remove('text-green-400');
+            document.getElementById('mascot').innerText = '🛸';
+            document.getElementById('mascot').classList.remove('bounce');
+            updateAnswerControls();
+            state.micRestarts = 0;
+            state.micMuted = false;
+            state.micRetryHint = false;
+            clearHeard();
+
+            if(state.mode === 'test' && state.testType === 'count') {
+                if(state.questionsCount >= state.targetQuestions) {
+                    endGame();
+                    return;
+                }
+                document.getElementById('statusValue').innerText = `${state.questionsCount + 1}/${state.targetQuestions}`;
+            }
+
+            let baseNum, factor;
+            let isMistakeRetry = false;
+
+            if (state.mode === 'practice' && state.mistakesQueue.length > 0 && Math.random() < 0.5) {
+                const potentialMistake = state.mistakesQueue[0];
+                const key = `${potentialMistake.n1}-${potentialMistake.n2}-${state.operation}`;
+                if (key !== state.lastQuestionKey) {
+                    const mistake = state.mistakesQueue.shift(); 
+                    baseNum = mistake.n1;
+                    factor = mistake.n2;
+                    isMistakeRetry = true;
+                }
+            }
+
+            if (!isMistakeRetry) {
+                const facts = [];
+                for (const base of state.practiceNums) for (let f = 2; f <= 12; f++) {
+                    if (base + '-' + f + '-' + state.operation !== state.lastQuestionKey) facts.push([base, f]);
+                }
+                [baseNum, factor] = facts[Math.floor(Math.random() * facts.length)];
+            }
+
+            state.lastQuestionKey = `${baseNum}-${factor}-${state.operation}`;
+
+            let displayN1, displayN2, ans, speechQ;
+            const t = i18n[state.language];
+
+            if (state.operation === 'multiply') {
+                displayN1 = baseNum;
+                displayN2 = factor;
+                ans = baseNum * factor;
+                speechQ = t.questionMul(displayN1, displayN2);
+            } else {
+                displayN1 = baseNum * factor;
+                displayN2 = baseNum;
+                ans = factor;
+                speechQ = t.questionDiv(displayN1, displayN2);
+            }
+            
+            state.currentQ = { displayN1, displayN2, ans, speech: speechQ, rawN1: baseNum, rawN2: factor };
+            state.keypadInput = "";
+            document.getElementById('userAnswerDisplay').innerText = "";
+
+            const num1El = document.getElementById('num1');
+            const num2El = document.getElementById('num2');
+            
+            num1El.parentElement.classList.remove('shake');
+            num1El.innerText = displayN1;
+            num2El.innerText = displayN2;
+
+            num1El.classList.remove('pop-in');
+            num2El.classList.remove('pop-in');
+            void num1El.offsetWidth; 
+            num1El.classList.add('pop-in');
+            schedule(() => num2El.classList.add('pop-in'), 100);
+
+            if (state.mode === 'test' && state.testType === 'time') {
+                if (state.voiceSupported && !state.usingKeypad) {
+                    schedule(() => { if(state.isPlaying) micRequestStart('auto'); }, 400);
+                }
+            } else {
+                // The first utterance must run inside the Start tap on Safari.
+                if (fromGesture) speak(speechQ, true);
+                else schedule(() => { if (state.isPlaying) speak(speechQ, true); }, 400);
+            }
+        }
+
+        // Parse a spoken answer into an integer, or return null.
+        // Handles digit transcripts ("24"), English words ("twenty four",
+        // "one hundred and eight") and German words, including compounds
+        // ("vierundzwanzig", "einhundertvierundvierzig"). The old parser only
+        // knew the single words 0-12, so most voice answers above 12 failed.
+        function parseSpokenNumber(raw) {
+            if (typeof raw !== 'string') return null;
+            const text = raw.trim().replace(/^(?:the answer is|die antwort ist)\s+/i, '');
+            return window.parseAnswer(text, state.language);
+        }
+
+        function processVoiceInput(text) {
+            if(!state.isPlaying || state.usingKeypad || state.answerLocked) return;
+            document.getElementById('userAnswerDisplay').classList.remove('opacity-50');
+            const number = parseSpokenNumber(text);
+            document.getElementById('userAnswerDisplay').innerText = number === null ? "?" : number;
+            if (number !== null) {
+                checkAnswer(false, number);
+            } else {
+                showBubble("?", 1000);
+            }
+        }
+
+        function checkAnswer(isKeypad, val = null) {
+            if(!state.isPlaying || state.paused || state.answerLocked) return;
+            if (state.mode === 'test' && state.testType === 'time') {
+                tickTimer();
+                if (!state.isPlaying) return;
+            }
+            const userAns = isKeypad ? parseInt(state.keypadInput) : val;
+            // Empty keypad OK tap / unparseable input is not an answer: the old
+            // code scored it as a miss and counted the question.
+            if (!Number.isInteger(userAns) || userAns < 0 || userAns > 999) return;
+            state.answerLocked = true;
+            updateAnswerControls();
+            micRequestStop();
+            if (userAns === state.currentQ.ans) {
+                handleCorrect();
+            } else {
+                handleIncorrect(userAns);
+            }
+        }
+
+        function handleCorrect() {
+            state.score += 10 + (state.streak * 2);
+            state.streak++;
+            state.correctCount++;
+            state.questionsCount++;
+            updateScore();
+            
+            if(state.mode === 'practice') {
+                showBubble(getRandomPraise(), 1000);
+            }
+            
+            playSound(true);
+            
+            const mascot = document.getElementById('mascot');
+            mascot.innerText = "🚀"; 
+            mascot.classList.add('bounce');
+            document.getElementById('userAnswerDisplay').classList.add('text-green-400');
+            
+            const delay = (state.mode === 'test' && state.testType === 'time') ? 600 : 1500;
+
+            schedule(() => {
+                if(!state.isPlaying) return;
+                mascot.innerText = "🛸"; 
+                mascot.classList.remove('bounce');
+                document.getElementById('userAnswerDisplay').classList.remove('text-green-400');
+                nextQuestion();
+            }, delay);
+        }
+
+        function handleIncorrect(val) {
+            state.streak = 0;
+            state.questionsCount++;
+            updateScore();
+            
+            if (state.mode === 'practice' && !state.mistakesQueue.some(m => m.n1 === state.currentQ.rawN1 && m.n2 === state.currentQ.rawN2)) {
+                state.mistakesQueue.push({
+                    n1: state.currentQ.rawN1,
+                    n2: state.currentQ.rawN2
+                });
+            }
+
+            playSound(false);
+            
+            if(state.mode === 'practice') {
+                const t = i18n[state.language];
+                showBubble(t.correct(state.currentQ.ans), 1500);
+                speak(t.correct(state.currentQ.ans));
+            } else {
+                showBubble(i18n[state.language].miss, 800);
+            }
+
+            const box = document.getElementById('num1').parentElement;
+            box.classList.remove('shake');
+            void box.offsetWidth;
+            box.classList.add('shake');
+
+            const delay = (state.mode === 'test' && state.testType === 'time') ? 800 : 2000;
+
+            schedule(() => {
+                if(!state.isPlaying) return;
+                nextQuestion();
+            }, delay);
+        }
+
+        function endGame() {
+            if (!state.isPlaying || state.gameEnded) return;
+            state.gameEnded = true;
+            state.isPlaying = false;
+            state.paused = false;
+            state.session++;
+            cancelActivity();
+            closeKeypad();
+            document.body.classList.remove('game-active');
+
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+
+            let rank = "Space Cadet";
+            let color = "text-gray-400";
+            let earnedNewBadge = false;
+            
+            let accuracy = 0;
+            if(state.questionsCount > 0) {
+                accuracy = Math.round((state.correctCount / state.questionsCount) * 100);
+            }
+
+            if(state.score >= 200) { 
+                if(saveBadge('pilot')) earnedNewBadge = true;
+                rank = "Rocket Pilot"; color = "text-blue-400"; 
+            }
+            if(state.score >= 500) { 
+                if(saveBadge('commander')) earnedNewBadge = true;
+                rank = "Mission Commander"; color = "text-purple-400"; 
+            }
+            if(state.score >= 1000) { 
+                if(saveBadge('legend')) earnedNewBadge = true;
+                rank = "Galactic Legend"; color = "text-yellow-400"; 
+            }
+            if(state.score >= 1500) { 
+                if(saveBadge('navigator')) earnedNewBadge = true;
+                rank = "Nebula Navigator"; color = "text-cyan-400"; 
+            }
+            if(state.score >= 2000) { 
+                if(saveBadge('supernova')) earnedNewBadge = true;
+                rank = "Supernova Specialist"; color = "text-orange-400"; 
+            }
+            if(state.score >= 3000) { 
+                if(saveBadge('master')) earnedNewBadge = true;
+                rank = "Universal Master"; color = "text-pink-400"; 
+            }
+
+            const t = i18n[state.language];
+            const rankIds = ['pilot', 'commander', 'legend', 'navigator', 'supernova', 'master'];
+            rank = t.ranks[rankIds.filter(id => state.score >= ({pilot:200,commander:500,legend:1000,navigator:1500,supernova:2000,master:3000})[id]).length];
+            updateStorageNotice();
+            const rankEl = document.getElementById('rankTitle');
+            rankEl.innerText = t.rank + " " + rank;
+            rankEl.className = "text-xl font-bold mb-2 " + color;
+
+            const badgeAlert = document.getElementById('newBadgeAlert');
+            badgeAlert.innerText = t.newBadge;
+            if (earnedNewBadge) {
+                badgeAlert.classList.remove('hidden');
+                speak(t.newBadgeSpoken(rank));
+            } else {
+                badgeAlert.classList.add('hidden');
+                speak(t.completeSpoken(rank));
+            }
+
+            document.getElementById('finalScore').innerText = state.score;
+            document.getElementById('finalAccuracy').innerText = accuracy + "%";
+        }
+
+        function resetToMenu() {
+            state.isPlaying = false;
+            state.paused = false;
+            state.session++;
+            cancelActivity();
+            document.body.classList.remove('game-active');
+            document.getElementById('pauseScreen').classList.add('hidden');
+            document.getElementById('gameArea').classList.add('hidden');
+            micRequestStop();
+            closeKeypad();
+            if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch(e) {} }
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('scoreDisplay').innerText = "0";
+            document.getElementById('streakContainer').innerHTML = `
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+                <i class="fa-regular fa-star text-yellow-500/30"></i>
+            `;
+            document.getElementById('statusValue').classList.remove('text-red-400');
+            if (appUpdateReady) window.location.reload();
+        }
+
+        function quitGame() {
+            resetToMenu();
+        }
+
+        // --- UI Helper Functions ---
+        function updateScore() {
+            document.getElementById('scoreDisplay').innerText = state.score;
+            const container = document.getElementById('streakContainer');
+            container.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                const star = document.createElement('i');
+                star.className = `fa-solid fa-star text-sm ${i < state.streak ? 'text-yellow-400 pop-in' : 'text-slate-700'}`;
+                container.appendChild(star);
+            }
+        }
+
+        function showBubble(text, duration) {
+            const b = document.getElementById('speechBubble');
+            b.innerText = text;
+            b.classList.remove('opacity-0');
+            b.style.top = '-80px';
+            if (state.bubbleTimer) clearTimeout(state.bubbleTimer);
+            state.bubbleTimer = schedule(() => {
+                b.classList.add('opacity-0');
+                b.style.top = '-60px';
+            }, duration);
+        }
+
+        function openKeypad() {
+            if (!state.isPlaying || state.paused) return;
+            const keypad = document.getElementById('keypad');
+            keypad.classList.remove('hidden', 'translate-y-full');
+            document.getElementById('toggleKeypadBtn').innerText = i18n[state.language].useVoice;
+            document.getElementById('btnCloseKeypad').classList.toggle('hidden', !state.voiceSupported);
+            document.body.classList.add('keypad-open');
+            state.usingKeypad = true;
+            state.preferredInput = 'keypad';
+            micRequestStop();
+            saveSettings();
+        }
+
+        function closeKeypad() {
+            document.getElementById('keypad').classList.add('hidden', 'translate-y-full');
+            document.getElementById('toggleKeypadBtn').innerText = i18n[state.language].keypad;
+            document.body.classList.remove('keypad-open');
+            state.usingKeypad = false;
+        }
+
+        function toggleKeypad(forceOpen = false) {
+            if (!state.voiceSupported) { openKeypad(); return; }
+            const keypad = document.getElementById('keypad');
+            const isClosed = keypad.classList.contains('hidden') || keypad.classList.contains('translate-y-full');
+            if (forceOpen || isClosed) {
+                openKeypad();
+            } else {
+                closeKeypad();
+                state.preferredInput = 'voice';
+                saveSettings();
+                // Back to voice: re-ask the current question so the mic reopens
+                // after TTS finishes, exactly like a fresh question.
+                if (state.isPlaying && state.voiceSupported && !state.answerLocked) {
+                    if (isIOS) {
+                        cancelSpeech();
+                        state.micMuted = false;
+                        micRequestStart('user');
+                    } else speak(state.currentQ.speech, true);
+                }
+            }
+        }
+
+        function addKey(num) {
+            if (state.isPlaying && !state.paused && !state.answerLocked && /^\d$/.test(String(num)) && state.keypadInput.length < 3) {
+                state.keypadInput += num;
+                document.getElementById('userAnswerDisplay').innerText = state.keypadInput;
+            }
+        }
+
+        function backspaceKey() {
+            if (!state.isPlaying || state.paused || state.answerLocked) return;
+            // The button shows a backspace icon; the old handler wiped the
+            // whole entry. Delete one digit, as the icon promises.
+            state.keypadInput = state.keypadInput.slice(0, -1);
+            document.getElementById('userAnswerDisplay').innerText = state.keypadInput;
+        }
+        function clearKey() {
+            if (!state.isPlaying || state.paused || state.answerLocked) return;
+            state.keypadInput = "";
+            document.getElementById('userAnswerDisplay').innerText = "";
+        }
+
+        // --- Audio Utils ---
+        // Changed: Added autoListen parameter
+        let cachedVoices = [];
+        function refreshVoices() { try { cachedVoices = synth ? synth.getVoices() : []; } catch(e) {} }
+        if (synth) { refreshVoices(); if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = refreshVoices; }
+
+        function speak(text, autoListen = false) {
+            const epoch = ++state.speechEpoch;
+            const session = state.session;
+            const questionId = state.questionId;
+            const valid = () => epoch === state.speechEpoch && session === state.session && questionId === state.questionId;
+            if (!state.sound || !window.SpeechSynthesisUtterance || !synth) { if (autoListen) micRequestStart('auto'); return; }
+            if (!synth) { if (autoListen) micRequestStart('auto'); return; }
+            // The mic must never hear the game itself: pause it while talking,
+            // and remember whether it wanted to be on.
+            const resumeMic = state.micIntent;
+            if (state.micState === 'listening' || state.micState === 'starting') {
+                state.micIntent = false;
+                state.micPendingStart = false;
+                state.micState = 'stopping';
+                try { recognition.stop(); } catch (e) {}
+            }
+            if (synth.speaking || synth.pending) synth.cancel();
+            if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
+            const utter = new SpeechSynthesisUtterance(text);
+            // Retain it until completion; WebKit can lose callbacks otherwise.
+            state.activeUtterance = utter;
+            utter.rate = 1.0;
+            utter.pitch = 1.1;
+            const voices = cachedVoices.length ? cachedVoices : synth.getVoices();
+
+            let preferredVoice = null;
+            if (state.language === 'de-DE') {
+                preferredVoice = voices.find(v => v.lang && (v.lang.indexOf('de') === 0));
+            } else {
+                preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices.find(v => v.lang === 'en-US');
+            }
+            if (preferredVoice) utter.voice = preferredVoice;
+            utter.lang = state.language;
+
+            // Handlers attach BEFORE speak() (iOS can miss onend otherwise).
+            state.speaking = true;
+            let finished = false;
+            const finish = () => {
+                if (finished || !valid()) return;
+                finished = true;
+                state.speaking = false;
+                state.activeUtterance = null;
+                if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
+                if (autoListen || resumeMic) micRequestStart('auto');
+            };
+            utter.onend = finish;
+            utter.onerror = finish;
+            // If onend never fires (a recurring browser bug, esp. after
+            // cancel()), do not leave the mic blocked forever - but tie the
+            // fallback to THIS utterance and cancel it when a new speak() or
+            // question supersedes it, so it cannot open the mic mid-next-question.
+            state.speechTimer = schedule(() => {
+                if (!valid()) return;
+                // Stop stalled speech before allowing the microphone to listen.
+                try { synth.cancel(); } catch {}
+                finish();
+            }, Math.min(7000, 1500 + text.length * 120));
+            try { synth.speak(utter); } catch { finish(); }
+        }
+
+        // One shared AudioContext. The old code created a fresh context per
+        // beep; on iOS a context created outside a user gesture starts
+        // 'suspended' and stays silent. unlockAudio() runs in the Start tap.
+        let audioCtx = null;
+        function unlockAudio() {
+            if (!state.sound) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!audioCtx) audioCtx = new AC();
+                if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') audioCtx.resume().catch(() => {});
+            } catch (e) {}
+        }
+
+        function playSound(success) {
+            if (!state.sound) return;
+            unlockAudio();
+            if (!audioCtx) return;
+            try {
+                const ctx = audioCtx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+                if (success) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(500, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        function getRandomPraise() {
+            const phrases = i18n[state.language].praise;
+            return phrases[Math.floor(Math.random() * phrases.length)];
+        }
+
+        document.getElementById('micBtn').addEventListener('click', () => {
+            unlockAudio();
+            if (!recognition) return;
+            if (state.micState === 'listening' || state.micState === 'starting') {
+                // Mute for the rest of this question: auto-listen must not
+                // reopen a mic the user deliberately closed.
+                state.micMuted = true;
+                micRequestStop();
+            } else {
+                cancelSpeech();
+                state.micMuted = false;
+                if (state.micState === 'blocked') state.micState = 'off'; // manual retry after a denial
+                micRequestStart('user');
+            }
+        });
+
+        // Physical keyboard entry (desktop / iPad with keyboard): digits type,
+        // Backspace deletes, Enter submits - when the keypad is the input mode.
+        document.addEventListener('keydown', (e) => {
+            if (!state.isPlaying || state.paused || state.answerLocked || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                if (!state.usingKeypad) openKeypad();
+                addKey(parseInt(e.key, 10));
+            } else if (e.key === 'Backspace' && state.usingKeypad) {
+                e.preventDefault();
+                backspaceKey();
+            } else if (e.key === 'Enter' && state.usingKeypad &&
+                (!(e.target instanceof HTMLButtonElement) || e.target.closest('#keypad'))) {
+                e.preventDefault();
+                checkAnswer(true);
+            }
+        });
+
+        // iOS Safari never fires beforeinstallprompt, so the install button can
+        // never appear there. Show the Share-sheet instructions instead.
+        (function showIosInstallHint() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+            if (isIOS && !isStandalone) {
+                document.getElementById('iosInstallHint').classList.remove('hidden');
+            }
+        })();
+        document.getElementById('toggleKeypadBtn').addEventListener('click', () => toggleKeypad());
+        if (window.speechSynthesis) window.speechSynthesis.getVoices();
+        
+        // Initial load
+        loadBadges();
+        loadSettings();
+        updateTexts();
+        setMode(state.mode);
+        setOperation(state.operation);
+        setTestType(state.testType);
+        for (const btn of document.querySelectorAll('.num-toggle')) {
+            const selected = state.practiceNums.includes(Number(btn.innerText));
+            btn.classList.toggle('selected', selected);
+            btn.setAttribute('aria-pressed', String(selected));
+        }
+
+    </script>
 </body>
 </html>
+
