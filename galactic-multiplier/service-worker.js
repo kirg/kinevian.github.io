@@ -1,4 +1,4 @@
-const CACHE_NAME = 'galactic-multiplier-v15';
+const CACHE_NAME = 'galactic-multiplier-v17';
 const CACHE_PREFIX = 'galactic-multiplier-';
 const ASSETS = [
   "./index.html",
@@ -53,6 +53,11 @@ async function networkFirst(request, navigation) {
   const timeout = setTimeout(() => controller.abort(), 4000);
   try {
     const response = await fetch(request, { signal: controller.signal, cache: 'no-cache' });
+    // Hosts with "pretty URLs" (Cloudflare Pages) redirect /index.html to /. A navigation fetch
+    // surfaces that as an opaqueredirect response (ok === false). Treating it as a failure served
+    // the cached shell forever, so launches via start_url never picked up updates. Hand the
+    // redirect to the browser; it follows it and the worker then handles the target normally.
+    if (response.type === 'opaqueredirect') return response;
     if (!response.ok) throw new Error('Asset unavailable');
     // Store canonical shell navigation so /, /index.html, and query strings work offline.
     try { await cache.put(navigation ? SHELL_URL : request.url, response.clone()); }

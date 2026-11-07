@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
+// Read the real cache name so the test doesn't go stale every time the worker is bumped.
+const CACHE_NAME = fs.readFileSync(path.join(__dirname, '..', 'service-worker.js'), 'utf8').match(/CACHE_NAME = '([^']+)'/)[1];
 function worker(options = {}) {
     const events = new Map();
     const stores = new Map();
@@ -41,6 +43,9 @@ function worker(options = {}) {
         fetch: async request => {
             if (offline) throw new Error('Offline');
             fetches.push(request.url);
+            // Static hosts with "pretty URLs" (Cloudflare Pages) answer /x/index.html with a 308 to /x/.
+            // For a navigation (redirect: 'manual') fetch() resolves to an opaqueredirect response.
+            if (options.redirect) return { type: 'opaqueredirect', ok: false, status: 0, clone() { return this; } };
             return new Response('fresh:' + request.url);
         }
     });
@@ -60,7 +65,7 @@ function worker(options = {}) {
 test('installation caches only a complete local shell', async () => {
     const sw = worker();
     await sw.lifecycle('install');
-    const urls = [...sw.stores.get('galactic-multiplier-v14').keys()];
+    const urls = [...sw.stores.get(CACHE_NAME).keys()];
     assert.equal(urls.length, 22);
     assert.ok(urls.every(url => url.startsWith('https://kinevian.com/galactic-multiplier/')));
     assert.ok(urls.some(url => url.endsWith('/numbers.js')));
@@ -120,4 +125,11 @@ test('cache quota and storage denial do not discard a working online response', 
         assert.equal(await (await sw.fetch(url)).text(), 'fresh:' + url);
     }
 });
-
+test('a server redirect on the shell is handed to the browser instead of a stale cached copy', async () => {
+    const sw = worker({ redirect: true });
+    await sw.lifecycle('install'); // seeds the cache, so a wrong fallback would be served
+    const res = await sw.fetch('https://kinevian.com/galactic-multiplier/index.html', 'navigate');
+    assert.equal(res.type, 'opaqueredirect', 'the redirect must reach the browser so it loads the fresh page');
+    const stored = [...sw.stores.get(CACHE_NAME).values()];
+    assert.ok(stored.every(r => r.type !== 'opaqueredirect'), 'an opaque redirect must never be cached');
+});
