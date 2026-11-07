@@ -1,5 +1,6 @@
 # October 28 device-report fixes
 
+- **Installed app could stay on a stale build.** Cloudflare Pages redirects `/galactic-multiplier/index.html` (the installed app's `start_url`) to `/galactic-multiplier/`. The worker read that redirect as a failed fetch and served the cached shell instead, so launches via `index.html` never saw content-only updates. The worker now hands the redirect to the browser. Covered by a new service-worker test; cache v17.
 - **Question numbers could be invisible.** `.pop-in` started at `opacity: 0` on the element itself, and the reduced-motion rule switches animations off, so the numbers never appeared (Android "remove animations", iOS Reduce Motion, some battery savers). The hidden start state now lives in the keyframes; with animation off the numbers are simply visible. Streak stars used the same class.
 - **Title unreadable on iPhone.** The gradient title has a transparent text fill, and iOS Safari paints `text-shadow` through it as a solid purple blob. The title now glows with `filter: drop-shadow` instead.
 - **Short phones (≤620px tall, e.g. iPhone SE with Safari toolbars):** the last keypad row was below the fold. Keypad mode now drops the mascot row and uses 44px keys so the answer and the whole keypad fit.

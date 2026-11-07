@@ -43,6 +43,9 @@ function worker(options = {}) {
         fetch: async request => {
             if (offline) throw new Error('Offline');
             fetches.push(request.url);
+            // Static hosts with "pretty URLs" (Cloudflare Pages) answer /x/index.html with a 308 to /x/.
+            // For a navigation (redirect: 'manual') fetch() resolves to an opaqueredirect response.
+            if (options.redirect) return { type: 'opaqueredirect', ok: false, status: 0, clone() { return this; } };
             return new Response('fresh:' + request.url);
         }
     });
@@ -122,4 +125,11 @@ test('cache quota and storage denial do not discard a working online response', 
         assert.equal(await (await sw.fetch(url)).text(), 'fresh:' + url);
     }
 });
-
+test('a server redirect on the shell is handed to the browser instead of a stale cached copy', async () => {
+    const sw = worker({ redirect: true });
+    await sw.lifecycle('install'); // seeds the cache, so a wrong fallback would be served
+    const res = await sw.fetch('https://kinevian.com/galactic-multiplier/index.html', 'navigate');
+    assert.equal(res.type, 'opaqueredirect', 'the redirect must reach the browser so it loads the fresh page');
+    const stored = [...sw.stores.get(CACHE_NAME).values()];
+    assert.ok(stored.every(r => r.type !== 'opaqueredirect'), 'an opaque redirect must never be cached');
+});
