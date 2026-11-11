@@ -1,0 +1,37 @@
+# lang_a	word_a	lang_b	word_b	note shown on word_a's card	note shown on word_b's card
+de	Gift	en	gift	English "gift" means Geschenk; German Gift means poison.	German "Gift" means poison; a gift is ein Geschenk.
+de	bekommen	en	become	English "become" means werden; bekommen means to get or receive.	German "bekommen" means to get/receive; become = werden.
+de	Handy	en	handy	English "handy" means praktisch; ein Handy is a mobile phone.	German "Handy" is a mobile phone.
+de	Chef	en	chef	English "chef" is a Koch; der Chef is the boss.	German "Chef" means boss; a chef is ein Koch.
+de	Kind	en	kind	English "kind" means nett or Art; das Kind is a child.	German "Kind" means child.
+de	also	en	also	English "also" means auch; German also means so / therefore.	German "also" means so / therefore; also = auch.
+de	bald	en	bald	English "bald" means kahl; German bald means soon.	German "bald" means soon; bald = kahl.
+de	fast	en	fast	English "fast" means schnell; German fast means almost.	German "fast" means almost; fast = schnell.
+de	sensibel	en	sensible	English "sensible" means vernünftig; sensibel means sensitive.	German "sensibel" means sensitive; sensible = vernünftig.
+de	Hut	en	hut	English "hut" is eine Hütte; der Hut is a hat.	German "Hut" means hat; a hut is eine Hütte.
+de	Brief	en	brief	English "brief" means kurz; der Brief is a letter.	German "Brief" means letter; brief = kurz.
+de	Art	en	art	English "art" means Kunst; die Art means kind or type.	German "Art" means kind/type; art = Kunst.
+de	Wand	en	wand	English "wand" is ein Zauberstab; die Wand is a wall.	German "Wand" means wall; a magic wand is ein Zauberstab.
+de	Rock	en	rock	English "rock" is ein Felsen or Stein; der Rock is a skirt.	German "Rock" means skirt (and also rock music).
+de	spenden	en	spend	English "spend" means ausgeben; spenden means to donate.	German "spenden" means to donate; spend = ausgeben.
+de	wer	en	where	English "where" means wo; wer means who.	German "wer" means who; where = wo.
+de	aktuell	en	actual	English "actual" means tatsächlich; aktuell means current.	German "aktuell" means current; actual = tatsächlich.
+de	eventuell	en	eventually	English "eventually" means schließlich; eventuell means possibly.	German "eventuell" means possibly; eventually = schließlich.
+de	Rat	en	rat	English "rat" is eine Ratte; der Rat means advice or council.	German "Rat" means advice; a rat is eine Ratte.
+de	Mist	en	mist	English "mist" is Nebel; der Mist means manure (or: rubbish!).	German "Mist" means manure / rubbish; mist = Nebel.
+fr	librairie	en	library	English "library" is une bibliothèque; une librairie is a bookshop.	French "librairie" means bookshop; library = bibliothèque.
+fr	sensible	en	sensible	English "sensible" means raisonnable; sensible means sensitive.	French "sensible" means sensitive; sensible = raisonnable.
+fr	actuellement	en	actually	English "actually" means en fait; actuellement means currently.	French "actuellement" means currently; actually = en fait.
+fr	attendre	en	attend	English "attend" means assister à; attendre means to wait.	French "attendre" means to wait; attend = assister à.
+fr	blesser	en	bless	English "bless" means bénir; blesser means to hurt.	French "blesser" means to hurt; bless = bénir.
+fr	déception	en	deception	English "deception" means tromperie; déception means disappointment.	French "déception" means disappointment.
+fr	coin	en	coin	English "coin" is une pièce; un coin is a corner.	French "coin" means corner; a coin is une pièce.
+fr	location	en	location	English "location" means un lieu; la location means renting.	French "location" means renting/rental.
+fr	raisin	en	raisin	English "raisin" is un raisin sec; le raisin is a grape.	French "raisin" means grape; a raisin is un raisin sec.
+fr	pain	en	pain	English "pain" is la douleur; le pain is bread.	French "pain" means bread; pain = douleur.
+fr	journée	en	journey	English "journey" is un voyage; la journée means the day.	French "journée" means day; journey = voyage.
+fr	chair	en	chair	English "chair" is une chaise; la chair means flesh.	French "chair" means flesh; a chair is une chaise.
+fr	rester	en	rest	English "rest" means se reposer; rester means to stay.	French "rester" means to stay; rest = se reposer.
+fr	large	en	large	English "large" means grand; large means wide.	French "large" means wide; large = grand.
+fr	éventuellement	en	eventually	English "eventually" means finalement; éventuellement means possibly.	French "éventuellement" means possibly; eventually = finalement.
+fr	monnaie	en	money	English "money" is l'argent; la monnaie means change (coins) or currency.	French "monnaie" means change/currency; money = argent.

@@ -5,6 +5,30 @@
 
 ---
 
+## 0. Family edition: what to build first (overrides the larger plan below)
+
+The first real users are two children (9 and 12), their close friends, and a few adults in the family: about 10–20 people. So:
+
+| Topic | Family edition | Larger plan (later, only if ever needed) |
+|---|---|---|
+| App | **PWA only** (installable from the browser, works offline). No app stores, no native wrappers, no Apple/Google developer fees | Capacitor wrappers for the stores |
+| Hosting | GitHub Pages (this repo) for the app and word packs | CDN / Cloudflare R2 |
+| Backend | Firebase **free Spark plan**: Google sign-in + Firestore for progress. Child profiles with a picture-PIN under a parent's account | Blaze plan, Cloud Functions |
+| Email-code sign-in (9.5) | Optional. It needs a small Cloud Function, which needs the pay-as-you-go Blaze plan (still $0 at this size; set a $1 budget alert) | Built in |
+| Word content | **From free open data** (Wiktionary, Tatoeba, wordfreq, OpenMoji) with the scripts in `docs/vocab-pipeline/opendata/`. AI only writes the kid-friendly bits: **~$0.20 per 1,500 words** with Claude Haiku 5.5 batches, or $0 by pasting into your ChatGPT / Gemini / Claude subscriptions | 4,000+ fully AI-written cards per language (~$1,050) |
+| How many words | Start with ~1,500 per language the family actually uses (at 3 words/day that is over a year for each child); add more any time with the same scripts | 4,000 per language, all levels |
+| Audio | The browser's built-in voices (Web Speech API): no audio files, no storage | Recorded / TTS audio files |
+| Pictures | OpenMoji emoji for concrete nouns; no illustrations | Commissioned or generated illustrations |
+| Levels | Parent picks each person's level; the app adjusts it automatically (3.4). Placement test optional | Full adaptive placement test |
+| Skipped for now | dictionary tier 2, AI extras at run time, classroom mode, weekly emails (progress is shown in the app), native apps, illustrations, recorded audio, second-model review of every card (spot-check ~5% instead) | |
+| Content generation cost | **~$0–1 in total** | ~$1,050 |
+| Running cost | **$0 / month** (inside free tiers) | see 9.7 |
+| Storage | word text ~1.2 KB per card compressed: ~5 MB for 4,500 words; on each device ~5–10 MB, no media | see 9.6 |
+
+The sections below describe the full design; where they differ, this table wins for the family edition.
+
+---
+
 ## 1. Goals and non-goals
 
 **Goals**
@@ -447,6 +471,8 @@ users/{uid}/assignments/{id}                 parent/teacher word lists and tests
 
 ### 9.6 Storage needed for word content and progress
 
+> **Family edition:** text only (no audio files or illustrations): ~1.2 KB per card compressed, ~5 MB for 4,500 words on the server and at most ~5–10 MB per device, plus ~2 MB of progress data per person per year.
+
 Measured on the sample cards (`docs/vocab-pipeline/samples/`): a full card is **~3 KB of JSON** (≈1 KB compressed). Cards with 3 senses or full verb tables are larger, so the estimate uses **3.5 KB per card (~1.2 KB compressed)**.
 
 **Content (the same for all users)**
@@ -485,6 +511,8 @@ So a typical child profile uses **~5 MB plus ~70 MB of cached media per year**, 
 Example: 1,000 families with 3 profiles each ≈ 6 GB after a year, about $1 per month of Firestore storage (the free tier covers the first 1 GB). Review logs older than a year can be compacted into monthly summaries if needed.
 
 ### 9.7 Server running costs
+
+> **Family edition (~20 users):** $0 per month: GitHub Pages hosting, Firebase free plan, browser voices instead of audio files. The table below is for larger scales.
 
 **Design choice that keeps costs low**: card states are packed into a few documents per track (~200 cards per document, a few KB each) rather than one document per card, and the app saves at the end of a session or every minute. A 10-minute session is then ~10 reads and ~6 writes, whatever the number of cards reviewed. Scheduling, tests and grading run on the device, so there are no per-question server calls.
 
@@ -583,6 +611,8 @@ These are small, cheap requests: a sentence check is ~600 input + ~200 output to
 Run generation through the **Message Batches API** (50% off, results within 24 hours) with prompt caching on the shared instructions. Use structured outputs so every card comes back as JSON that matches the schema.
 
 ### 11.4 How many tokens does content generation take?
+
+> **Family edition:** use the open-data route instead (`docs/vocab-pipeline/opendata/`): facts, grammar tables, translations and example sentences come free from Wiktionary and Tatoeba, and AI writes only the kid-friendly text, about 700 tokens per word. Cost: ~$0.20 per 1,500 words with Claude Haiku 5.5 batches (~$0.60 for three languages), ~$4 per 1,500 with Sonnet 5.5, or $0 through chat subscriptions. The estimate below is for fully AI-written cards and is kept for reference.
 Assumptions per curated word: generation ≈ 2k input + 3k output tokens (both kid and adult versions of every section, 3 examples, story, tips, bridges, distractors, cloze sentences; output includes the model's thinking), plus a review pass ≈ 3k input + 1k output. Add 30% for retries and regenerated cards.
 
 | | Words | Input tokens | Output tokens |

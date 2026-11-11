@@ -26,7 +26,7 @@ REQUIRED = ["id", "lang", "lemma", "pos", "wl", "cefr", "themes", "syllables", "
             "grammar", "senses", "etymology", "family", "synonyms", "antonyms",
             "collocations", "bridges", "mnemonics", "watch_out", "distractors",
             "cloze", "image_prompt", "flags"]
-OPTIONAL = {"review", "source"}
+OPTIONAL = {"review", "source", "emoji", "_errors"}
 DE_ARTICLE = {"m": "der", "f": "die", "n": "das"}
 CASES = ["nom", "acc", "dat", "gen"]
 TARGET = re.compile(r"\[\[([^\[\]]+)\]\]")
