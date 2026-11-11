@@ -431,14 +431,15 @@ shuffle; cap length by mode
 users/{uid}                                  owner settings, consent record, plan
 users/{uid}/profiles/{pid}                   name, avatar, birth year, mode, UI language
 users/{uid}/profiles/{pid}/tracks/{lang}     track kind, level (WL/CEFR), words/day, streak
-users/{uid}/profiles/{pid}/cards/{wordId_type}   FSRS state: stability, difficulty, due,
-                                             reps, lapses, mastery, updatedAt
+users/{uid}/profiles/{pid}/cardsets/{lang_n}   FSRS states packed ~200 cards per doc:
+                                             stability, difficulty, due, reps, lapses,
+                                             mastery, updatedAt per card (see 9.7)
 users/{uid}/profiles/{pid}/days/{yyyy-mm-dd} that day's new words, review log (array),
                                              minutes spent, quiz score
 users/{uid}/profiles/{pid}/tests/{testId}    spec, questions, answers, score
 users/{uid}/assignments/{id}                 parent/teacher word lists and tests
 ```
-- **One "day" document per profile per day** holds that day's review log as an array. A 10-minute session costs ~3–5 writes, not one per card, which keeps Firestore inside its free tier for a long time (free tier: 20k writes / 50k reads per day).
+- **One "day" document per profile per day** holds that day's review log as an array. With card states packed into a few documents (9.7), a 10-minute session costs ~6 writes, not one per card, which keeps Firestore inside its free tier for a long time (free tier: 20k writes / 50k reads per day).
 - Security rules: a user can only read and write under their own `users/{uid}`.
 - **Offline-first**: the app works fully offline (IndexedDB + Firestore offline persistence) and syncs when back online. Card states merge by latest `updatedAt`; review logs are append-only, so FSRS state can always be recomputed from them if two devices conflict.
 - Progress screens (weekly charts, streaks, test history, parent dashboard) read from the `days` and `tests` documents; a nightly Cloud Function writes small weekly summary documents so charts load fast and the weekly parent email is cheap to build.
@@ -482,6 +483,41 @@ So a typical child profile uses **~5 MB plus ~70 MB of cached media per year**, 
 | **Total** | **~1.7–2 MB** |
 
 Example: 1,000 families with 3 profiles each ≈ 6 GB after a year, about $1 per month of Firestore storage (the free tier covers the first 1 GB). Review logs older than a year can be compacted into monthly summaries if needed.
+
+### 9.7 Server running costs
+
+**Design choice that keeps costs low**: card states are packed into a few documents per track (~200 cards per document, a few KB each) rather than one document per card, and the app saves at the end of a session or every minute. A 10-minute session is then ~10 reads and ~6 writes, whatever the number of cards reviewed. Scheduling, tests and grading run on the device, so there are no per-question server calls.
+
+**Usage per monthly active profile** (≈20 active days/month): ~200 Firestore reads, ~120 writes, ~0.2 MB new data, ~8 MB of content download (text packs + audio/pictures for new words, initial download spread over the year), ~30 small background function runs (nightly summaries), ~0.5 email codes.
+
+**Prices used** (Firebase / Google Cloud list prices as last known; check the current pricing pages before budgeting):
+| Service | Free each month / day | Then |
+|---|---|---|
+| Firestore | 50k reads, 20k writes, 20k deletes per **day**; 1 GiB stored | ~$0.06 / 100k reads, ~$0.18 / 100k writes, ~$0.18 per GiB-month (multi-region; single region is cheaper) |
+| Firebase Hosting (content packs, media) | 10 GB stored, ~10 GB transfer / month | ~$0.15 / GB transfer |
+| Cloudflare R2 (alternative for media) | 10 GB stored, 10M reads / month | ~$0.015 / GB-month, **no download fees** |
+| Cloud Functions | 2M invocations / month | ~$0.40 per million + small compute |
+| Firebase Authentication | Google and custom-token sign-in free on the basic tier | if the project is upgraded to Identity Platform: 50k MAU free, then roughly $0.005 per MAU |
+| Email codes (e.g. Amazon SES or a provider's free tier) | ~3,000 emails / month free on many providers | ~$0.10 per 1,000 (SES) |
+
+Firebase needs the pay-as-you-go **Blaze plan** for Cloud Functions; the free quotas above still apply on Blaze. Set a budget alert (e.g. $10) on day one.
+
+**Estimated monthly cost (no AI extras)**
+| Monthly active profiles | Firestore | Content download (Hosting / R2) | Functions + email | **Total** |
+|---|---|---|---|---|
+| ≤ 300 (family, friends, a class) | $0 | $0 | $0 | **~$0** |
+| 1,000 | ~$0 (inside free tier) + ~$0.20 storage after a year | ~$0 (8 GB, within free) | ~$0 | **~$0–1** |
+| 10,000 | ~$1 ops + ~$3–4 storage after a year | ~$10 Hosting / ~$0 R2 | ~$0–5 | **~$5–20** |
+| 100,000 | ~$30 ops + ~$35 storage after a year | ~$120 Hosting / ~$30 R2 (request fees) | ~$10–20 | **~$100–200** |
+
+That is roughly **$0.001–0.002 per active profile per month**. Content storage itself (~1–3 GB including old versions) costs a few cents.
+
+**Things that change the picture**
+- **Media download is the biggest line** at scale: serving audio and pictures from Cloudflare R2 (no download fees) instead of Firebase Hosting cuts it by ~75%. Using the device's built-in voice for example sentences (§9.6) roughly halves media size again.
+- **Identity Platform**: if the project uses it (needed for some enterprise features, not for Google sign-in or the email-code flow here), 100k monthly users would add roughly $250 per month. Stay on basic Firebase Authentication unless a feature needs it.
+- **Optional AI extras** (§11.2) cost more than everything above: about $0.0002 per sentence check on Claude Haiku 5.5. A teen using it 5 times a day ≈ $0.03 per month, roughly 15–30× the server cost of that profile. Keep the daily limits, or include AI extras only in a paid plan.
+- **One-time costs are separate**: content generation (§11.4, ~$1,050 for all three languages with batches) and human review.
+- Domain (~$10–15/year) and app store accounts (Apple $99/year, Google Play $25 once) if you ship native apps.
 
 ---
 
