@@ -508,6 +508,8 @@ Estimated cost for the full curated set (all three languages), at current list p
 
 That is roughly **$350 per language** (batched) for the recommended setup, a one-time cost; updates and corrections later are small. A first prototype (500 English words) costs ~$45 batched. Wall-clock time is about 1–2 days per language with batches, the real bottleneck being human review (§10.1 step 5), not tokens.
 
+Cheaper route for part of the work: the prompts and checker in `docs/vocab-pipeline/` produce the same card format by hand in ChatGPT, Gemini or Claude chat subscriptions. Good for the prototype and for cross-model review; bulk generation is better done through the API.
+
 Tier-2 dictionary (§8.1): base entries come free from Wiktionary data; generating short kid-friendly definitions for, say, 30k extra words per language is ~0.5k input + 0.6k output each — about 100M tokens for all three languages: ~$15 on Haiku 5.5 or ~$315 on Sonnet 5.5 with batches. Better done lazily for words people actually look up.
 
 All AI outputs for kid profiles go through the same safety filter; no free-form chat for kids.
