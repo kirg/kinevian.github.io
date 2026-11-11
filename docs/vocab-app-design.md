@@ -503,12 +503,12 @@ Estimated cost for the full curated set (all three languages), at current list p
 |---|---|---|
 | All on Claude Opus 5.5 | ~$1,500 | **~$760** |
 | All on Claude Fable 5.2 | ~$3,000 | ~$1,500 |
-| **Recommended**: Opus 5.5 drafts + Fable 5.2 review of every card + Haiku 5.5 checks | ~$1,900 | **~$950** |
+| **Recommended**: Opus 5.5 drafts + Fable 5.2 review of every card + Haiku 5.5 checks | ~$2,100 | **~$1,050** |
 | All on Claude Sonnet 5.5 (cheaper alternative to test) | ~$760 | ~$380 |
 
-That is roughly **$300 per language** for the recommended setup, a one-time cost; updates and corrections later are small. A first prototype (500 English words) costs ~$40. Wall-clock time is about 1–2 days per language with batches, the real bottleneck being human review (§10.1 step 5), not tokens.
+That is roughly **$350 per language** (batched) for the recommended setup, a one-time cost; updates and corrections later are small. A first prototype (500 English words) costs ~$45 batched. Wall-clock time is about 1–2 days per language with batches, the real bottleneck being human review (§10.1 step 5), not tokens.
 
-Tier-2 dictionary (§8.1): base entries come free from Wiktionary data; generating short kid-friendly definitions for, say, 30k extra words per language is ~0.5k input + 0.6k output each — about 100M tokens for all three languages, ~$90 on Haiku 5.5 or ~$500 on Sonnet 5.5 with batches. Better done lazily for words people actually look up.
+Tier-2 dictionary (§8.1): base entries come free from Wiktionary data; generating short kid-friendly definitions for, say, 30k extra words per language is ~0.5k input + 0.6k output each — about 100M tokens for all three languages: ~$15 on Haiku 5.5 or ~$315 on Sonnet 5.5 with batches. Better done lazily for words people actually look up.
 
 All AI outputs for kid profiles go through the same safety filter; no free-form chat for kids.
 
