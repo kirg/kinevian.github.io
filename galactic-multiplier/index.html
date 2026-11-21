@@ -136,12 +136,16 @@
             40%, 60% { transform: translate3d(8px, 0, 0); }
         }
 
+        /* The hidden start state lives in the keyframes, not on the element:
+           with reduced motion the animation is switched off, and an element
+           whose own opacity is 0 would then stay invisible forever (the
+           question numbers vanished). inline-block lets transform apply to spans. */
         .pop-in {
-            animation: popIn 0.3s ease-out forwards;
-            opacity: 0;
-            transform: scale(0.5);
+            display: inline-block;
+            animation: popIn 0.3s ease-out both;
         }
         @keyframes popIn {
+            from { opacity: 0; transform: scale(0.5); }
             to { opacity: 1; transform: scale(1); }
         }
 
@@ -273,7 +277,7 @@
         </button>
 
         <div class="mt-2 mb-4 text-center">
-            <h1 id="appTitle" class="text-3xl font-bold mb-1 neon-text font-['Press_Start_2P'] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-tight">GALACTIC<br>MULTIPLIER</h1>
+            <h1 id="appTitle" class="text-3xl font-bold mb-1 font-['Press_Start_2P'] text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 leading-tight">GALACTIC<br>MULTIPLIER</h1>
             <p id="lblMissionControl" class="text-xs text-gray-400">Mission Control</p>
         </div>
 
