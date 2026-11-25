@@ -1,0 +1,47 @@
+{
+  "name": "Exercise Timer",
+  "short_name": "ExTimer",
+  "description": "Gym routine timer with sets, rests, reps & weight memory - works offline",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "orientation": "any",
+  "background_color": "#0f1115",
+  "theme_color": "#00e5a0",
+  "categories": ["health", "fitness", "lifestyle"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Start Last Workout",
+      "url": "./?start=last",
+      "description": "Jump straight into your last routine"
+    },
+    {
+      "name": "New Routine",
+      "url": "./?new=routine",
+      "description": "Create a new workout routine"
+    }
+  ]
+}
